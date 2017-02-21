@@ -43,7 +43,8 @@ def _random_subset(seq, m):
 
 def _gen_groups(n, f_a):
     """
-    Fast random groups
+    Pull all the random numbers at once and store in generator
+    Much faster
     """
     for rand in np.random.uniform(size=n):
         if rand < f_a:
@@ -57,9 +58,7 @@ def generate_powerlaw_group_graph(
         h, # two-vector of homophily
         f): # two-vector of class fractions
     """
-
-    Pretty simple algo:
-
+    Logic:
 
     Store two lists of repeated_nodes, one for each group
     The tricky part is that they need to be weighed by the h_a and h_b numbers
@@ -69,6 +68,32 @@ def generate_powerlaw_group_graph(
         7 times while adding a b-node to r_a 3 times
     Can simply give people a warning that we're multiplying by 10
     10x memory hit during graph creation isn't the end of the world
+
+    Algo:
+
+    1. Initialize empty graph
+    2. Add m nodes with random groups
+    3. Create node with a random group and attach its links at random to the m
+        seed nodes
+    4. Add all nodes to the repeated_nodes_a and repeated_nodes_b lists
+    5. Then, while the number of nodes less than n
+        5a. Create a new node
+        5b. Give it a random group
+        5c. Choose m targets from the repeated_nodes_a or repeated_nodes_b lists
+            based on group
+        5d. Add edges from source to targets
+        5e. Depending on groups of target nodes, add to repeated_nodes_a or
+            repeated_nodes_b
+        5f. Add source node to repeated_nodes_a and repeated_nodes_b
+        5g. Increment source
+
+
+    TODO:
+    - clean up assertions
+    - reduce number of parameters?
+    - clean up while loop (explicit init?)
+
+
     """
     h_aa, h_bb = [10 * x for x in h]
     h_ab, h_ba = [10 * (1 - x) for x in h]
