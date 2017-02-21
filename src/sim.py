@@ -2,13 +2,15 @@ import networkx as nx
 import random
 import itertools
 
-# Currently the code seems to work semi-acceptably
-# but the final degree distribution doesn't match the
-# initial one exactly, because there's a good chance
-# that nodes with high numbers of edge stubs will only
-# have self-links as options, which isn't allowed at the
-# moment. This might be fixable by weighting edge
-# connections to favor nodes with high edge stub count.
+"""
+Currently the code seems to work semi-acceptably
+but the final degree distribution doesn't match the
+initial one exactly, because there's a good chance
+that nodes with high numbers of edge stubs will only
+have self-links as options, which isn't allowed at the
+moment. This might be fixable by weighting edge
+connections to favor nodes with high edge stub count.
+"""
 
 m = 100
 n = 3
@@ -51,7 +53,7 @@ def generate_class_powerlaw_graph(m,n,p,
 		# This long list comprehension creates a list of nodes
 		# representing edge stubs belonging to the class of interest
 		edge_stubs = list(itertools.chain.from_iterable(
-			itertools.repeat(node, edges[node][0]) 
+			itertools.repeat(node, edges[node][0])
 			for node in edges if edges[node][1] == i and edges[node][0] > 0))
 
 		#Get the stubs for other nodes
@@ -76,7 +78,7 @@ def generate_class_powerlaw_graph(m,n,p,
 
 			if len(potential_ends) == 0:
 				continue
-				
+
 			r_n = random.randint(0,len(potential_ends)-1)
 
 			edge_end = potential_ends[r_n]
