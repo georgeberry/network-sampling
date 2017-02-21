@@ -20,9 +20,12 @@ We can simplify to a single homophily parameter (h = h_ii = h_jj)
 
 """
 
+import math
 import random
+from collections import Counter
 import numpy as np
 import networkx as nx
+import matplotlib.pyplot as plt
 
 def _random_subset(seq, m):
     """
@@ -154,5 +157,60 @@ def generate_powerlaw_group_graph(
         source += 1
     return G
 
+
+def group_log_log_plots(g):
+    """
+    Pass this a graph, generates log log plots for groups separately
+        y axis: log(p(degree | group))
+        x axis: log(degree | group)
+    """
+    a_nodes = set([x for x, y in g.node.items() if y['group'] == 'a'])
+    # node: deg
+    degrees = nx.degree(g)
+
+    a_deg_seq = {k: v for k, v in degrees.items() if k in a_nodes}
+    b_deg_seq = {k: v for k, v in degrees.items() if k not in a_nodes}
+    a_size = len(a_deg_seq)
+    b_size = len(b_deg_seq)
+
+    a_counts = [
+        (deg, count / a_size) for (deg, count) in
+        Counter(a_deg_seq.values()).items()
+    ]
+    b_counts = [
+        (deg, count / b_size) for (deg, count) in
+        Counter(b_deg_seq.values()).items()
+    ]
+
+    a_deg = [x[0] for x in a_counts]
+    a_prob = [x[1] for x in a_counts]
+    b_deg = [x[0] for x in b_counts]
+    b_prob = [x[1] for x in b_counts]
+
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.scatter(a_deg, a_prob, color='b', marker='o')
+    plt.scatter(b_deg, b_prob, color='r', marker='s')
+
+    plt.xlabel('Log10 degree')
+    plt.ylabel('Log10 probability')
+    plt.show()
+
 if __name__ == '__main__':
-    g = generate_powerlaw_group_graph(10000, 8, [.6, .4], [.8, .2])
+    # error with this one
+    # g = generate_powerlaw_group_graph(1000, 8, [1.0, 0.0], [.8, .2])
+    # group_log_log_plots(g)
+
+    """
+    g = generate_powerlaw_group_graph(1000, 8, [0.8, 0.2], [.8, .2])
+    group_log_log_plots(g)
+    """
+    g = generate_powerlaw_group_graph(1000, 8, [0.5, 0.5], [.8, .2])
+    group_log_log_plots(g)
+    """
+    g = generate_powerlaw_group_graph(1000, 8, [0.2, 0.8], [.8, .2])
+    group_log_log_plots(g)
+    """
+
+    # g = generate_powerlaw_group_graph(1000, 8, [0.0, 1.0], [.8, .2])
+    # group_log_log_plots(g)
