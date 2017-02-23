@@ -1,6 +1,10 @@
 """
 Adapted from Karimi et al. (2017), "Visibility of Minorities in Social Networks"
 
+Code from that paper is here:
+    https://github.com/frbkrm/HomophilicNtwMinorities/
+    blob/master/generate_homophilic_graph_symmetric.py
+
 For each of f_a is the fraction in group a, 1 - f_a is in group b
 By convention, f_a is the majority
 Each node attaches to m existing nodes in proportion to
@@ -18,8 +22,17 @@ Note that since there are only two groups complements follow, (1 - h_ii, 1 - h_j
 
 We can simplify to a single homophily parameter (h = h_ii = h_jj)
 
+TODO:
+- We have a cold-start problem to solve: the _random_subset function can
+    loop forever early on because there are not enough unique nodes
+    of a certain type to link to. For instance, if there is perfect homophily
+    and there are 4 members of group A, but each member of A has 8 links,
+    this function will run forever.
+
+    Solution: if there are < m nodes from a given group,
 """
 
+import copy
 import math
 import random
 from collections import Counter
@@ -44,22 +57,63 @@ def _random_subset(seq, m):
         targets.add(x)
     return targets
 
-def _gen_groups(n, f_a):
+def _gen_groups(n, n_a):
     """
     Pull all the random numbers at once and store in generator
     Much faster
     """
-    for rand in np.random.uniform(size=n):
-        if rand < f_a:
-            yield 'a'
-        else:
-            yield 'b'
+    groups = ['a' if x < n_a else 'b' for x in range(n)]
+    random.shuffle(groups)
+    return groups
+
+def _pick_targets(G, h_prob_dict, target_list, source, m):
+    target_prob_dict = {}
+
+    for target in target_list:
+        # Fudge factor here fixes the cold start problem
+        target_prob = h_prob_dict[(source, target)] * (0.00001 + G.degree(target))
+        target_prob_dict[target] = target_prob
+
+    # targets is the thing we will return
+    # it stores the outlinks from source
+    targets = set()
+    search_count = 0
+
+    rand_numbers = np.random.uniform(size=m)
+    while len(targets) < m:
+        rand_num = rand_numbers[search_count]
+
+        # Need to update this every time
+        prob_sum = sum(target_prob_dict.values())
+        if prob_sum == 0:
+            return targets
+
+        cumsum = 0.0
+        for tgt_idx, prob in target_prob_dict.items():
+            cumsum += (prob / prob_sum)
+            # If the random number is in the interval, we store it in targets
+            # and remove it from target_prob_dict so it's not eligible for
+            # a double link
+            if rand_num < cumsum:
+                targets.add(tgt_idx)
+                del target_prob_dict[tgt_idx]
+                break
+
+        # we need m links and have gone through the process m times with no luck
+        # this means there is nothing to link to, so we stop the iteration
+        search_count += 1
+        if search_count > m:
+            break
+
+    return targets
+
+
 
 def generate_powerlaw_group_graph(
         n, # number of nodes
         m, # mean degree
         h, # two-vector of homophily
-        f): # two-vector of class fractions
+        f): # probability of majority group
     """
     Logic:
 
@@ -75,7 +129,7 @@ def generate_powerlaw_group_graph(
     Algo:
 
     1. Initialize empty graph
-    2. Add m nodes with random groups
+    2. Add m nodes in each group
     3. Create node with a random group and attach its links at random to the m
         seed nodes
     4. Add all nodes to the repeated_nodes_a and repeated_nodes_b lists
@@ -98,64 +152,53 @@ def generate_powerlaw_group_graph(
 
 
     """
-    h_aa, h_bb = [10 * x for x in h]
-    h_ab, h_ba = [10 * (1 - x) for x in h]
-    f_a, f_b = f
-    grps_itr = _gen_groups(n, f_a)
-    # Assertions
-    assert n > 0
-    assert m > 0
-    assert h_aa % 1 == h_bb % 1 == 0
-    assert (10 >= h_aa >= 0) and (10 >= h_bb >= 0)
-    assert (f_a + f_b == 1) and (1 > f_a > 0) and (1 > f_b > 0)
-    # This has to come after assertions to avoid truncating floats to ints
-    h_aa, h_bb = int(h_aa), int(h_bb)
-    h_ab, h_ba = int(h_ab), int(h_ba)
-    # Create graph with seed nodes
-    # See template here: https://networkx.readthedocs.io/en/stable/
+    # Unpack homophily values
+    h_prob = {
+        ('a', 'a'): h[0],
+        ('a', 'b'): 1 - h[0],
+        ('b', 'b'): h[1],
+        ('b', 'a'): 1 - h[1],
+    }
+
+    # Get number majority and minority nodes nodes
+    n_a = int(f * n)
+
+    # See template algorithm here: https://networkx.readthedocs.io/en/stable/
     # _modules/networkx/generators/random_graphs.html#barabasi_albert_graph
     G = nx.Graph()
-    G.add_nodes_from([(x, {'group': next(grps_itr)}) for x in range(m)])
+
+    # We're going to create all the nodes first, then do link generation
+    # Note that we shuffle the indicies
+    G.add_nodes_from(
+        [(idx, {'group': grp}) for idx, grp in enumerate(_gen_groups(n, n_a))]
+    )
     G.name = "powerlaw_group_graph({},{})".format(n,m)
-    # Hold differently weighted targets for each group
-    repeated_nodes_a, repeated_nodes_b = [], []
-    # Index by source
+
+    # Compute all pairwise link probabilities once
+    h_prob_dict = {}
+    for src_idx, src_attr in G.nodes_iter(data=True):
+        src_grp = src_attr['group']
+        for tgt_idx, tgt_attr in G.nodes_iter(data=True):
+            tgt_grp = tgt_attr['group']
+            h_prob_dict[(src_idx, tgt_idx)] = h_prob[(src_grp, tgt_grp)]
+
+    # Seed nodes, we will weight by probability below
     source = m
+    target_list = list(range(m))
+
     while source < n:
-        # Choose group for new node
-        source_grp = next(grps_itr)
-        G.add_node(source, group=source_grp)
-        # Generate targets based on group identity
-        if G.number_of_edges() == 0:
-            # initialize uniform links
-            targets = list(range(m))
-        else:
-            if source_grp == 'a':
-                targets = _random_subset(repeated_nodes_a, m)
-            else:
-                targets = _random_subset(repeated_nodes_b, m)
-        # Add edges specified in targets
-        G.add_edges_from(zip([source]*m, targets))
-        # Get groups of nodes in targets: (node, group)
-        targets_grps = [(x, G.node[x]['group']) for x in targets]
-        # Add the destination nodes to repeated nodes
-        for node, target_grp in targets_grps:
-            if target_grp == 'a':
-                repeated_nodes_a.extend([node]*h_aa)
-                repeated_nodes_b.extend([node]*h_ba)
-            else:
-                repeated_nodes_a.extend([node]*h_ab)
-                repeated_nodes_b.extend([node]*h_bb)
-        # Add the source node to repeated nodes
-        if source_grp == 'a':
-            repeated_nodes_a.extend([source]*h_aa*m)
-            repeated_nodes_b.extend([source]*h_ba*m)
-        else:
-            repeated_nodes_a.extend([source]*h_ab*m)
-            repeated_nodes_b.extend([source]*h_bb*m)
+        targets = _pick_targets(G, h_prob_dict, target_list, source, m)
+
+        if len(targets) > 0:
+            G.add_edges_from(zip([source]*m, targets))
+
+        # Admit source to be linked to
+        target_list.append(source)
+
         # Increment
         source += 1
     return G
+
 
 
 def group_log_log_plots(g):
@@ -198,19 +241,17 @@ def group_log_log_plots(g):
 
 if __name__ == '__main__':
     # error with this one
-    # g = generate_powerlaw_group_graph(1000, 8, [1.0, 0.0], [.8, .2])
-    # group_log_log_plots(g)
+    g = generate_powerlaw_group_graph(1000, 2, [1.0, 1.0], .8)
+    group_log_log_plots(g)
 
-    """
-    g = generate_powerlaw_group_graph(1000, 8, [0.8, 0.2], [.8, .2])
+    g = generate_powerlaw_group_graph(1000, 8, [0.8, 0.8], .8)
     group_log_log_plots(g)
-    """
-    g = generate_powerlaw_group_graph(1000, 8, [0.5, 0.5], [.8, .2])
-    group_log_log_plots(g)
-    """
-    g = generate_powerlaw_group_graph(1000, 8, [0.2, 0.8], [.8, .2])
-    group_log_log_plots(g)
-    """
 
-    # g = generate_powerlaw_group_graph(1000, 8, [0.0, 1.0], [.8, .2])
-    # group_log_log_plots(g)
+    g = generate_powerlaw_group_graph(1000, 8, [0.5, 0.5], .8)
+    group_log_log_plots(g)
+
+    g = generate_powerlaw_group_graph(1000, 8, [0.8, 0.8], .8)
+    group_log_log_plots(g)
+
+    g = generate_powerlaw_group_graph(1000, 8, [1.0, 1.0], .8)
+    group_log_log_plots(g)
