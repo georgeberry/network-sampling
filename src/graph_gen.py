@@ -66,12 +66,15 @@ def _gen_groups(n, n_a):
     random.shuffle(groups)
     return groups
 
-def _pick_targets(G, h_prob_dict, target_list, source, m):
+def _pick_targets(G, h_prob, target_list, source, m):
+    src_grp = G.node[source]['group']
+
     target_prob_dict = {}
 
     for target in target_list:
+        tgt_grp = G.node[target]['group']
         # Fudge factor here fixes the cold start problem
-        target_prob = h_prob_dict[(source, target)] * (0.00001 + G.degree(target))
+        target_prob = h_prob[(src_grp, tgt_grp)] * (0.00001 + G.degree(target))
         target_prob_dict[target] = target_prob
 
     # targets is the thing we will return
@@ -106,7 +109,6 @@ def _pick_targets(G, h_prob_dict, target_list, source, m):
             break
 
     return targets
-
 
 
 def generate_powerlaw_group_graph(
@@ -174,20 +176,12 @@ def generate_powerlaw_group_graph(
     )
     G.name = "powerlaw_group_graph({},{})".format(n,m)
 
-    # Compute all pairwise link probabilities once
-    h_prob_dict = {}
-    for src_idx, src_attr in G.nodes_iter(data=True):
-        src_grp = src_attr['group']
-        for tgt_idx, tgt_attr in G.nodes_iter(data=True):
-            tgt_grp = tgt_attr['group']
-            h_prob_dict[(src_idx, tgt_idx)] = h_prob[(src_grp, tgt_grp)]
-
     # Seed nodes, we will weight by probability below
     source = m
     target_list = list(range(m))
 
     while source < n:
-        targets = _pick_targets(G, h_prob_dict, target_list, source, m)
+        targets = _pick_targets(G, h_prob, target_list, source, m)
 
         if len(targets) > 0:
             G.add_edges_from(zip([source]*m, targets))
@@ -244,14 +238,14 @@ if __name__ == '__main__':
     g = generate_powerlaw_group_graph(1000, 2, [1.0, 1.0], .8)
     group_log_log_plots(g)
 
-    g = generate_powerlaw_group_graph(1000, 8, [0.8, 0.8], .8)
+    g = generate_powerlaw_group_graph(1000, 2, [0.8, 0.8], .8)
     group_log_log_plots(g)
 
-    g = generate_powerlaw_group_graph(1000, 8, [0.5, 0.5], .8)
+    g = generate_powerlaw_group_graph(1000, 2, [0.5, 0.5], .8)
     group_log_log_plots(g)
 
-    g = generate_powerlaw_group_graph(1000, 8, [0.8, 0.8], .8)
+    g = generate_powerlaw_group_graph(1000, 2, [0.2, 0.2], .8)
     group_log_log_plots(g)
 
-    g = generate_powerlaw_group_graph(1000, 8, [1.0, 1.0], .8)
+    g = generate_powerlaw_group_graph(1000, 2, [0.0, 0.0], .8)
     group_log_log_plots(g)
