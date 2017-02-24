@@ -234,18 +234,18 @@ def group_log_log_plots(g):
     plt.show()
 
 if __name__ == '__main__':
-    # error with this one
-    g = generate_powerlaw_group_graph(1000, 2, [1.0, 1.0], .8)
+    g = generate_powerlaw_group_graph(10000, 2, [1.0, 1.0], .8)
     group_log_log_plots(g)
 
-    g = generate_powerlaw_group_graph(1000, 2, [0.8, 0.8], .8)
+    g = generate_powerlaw_group_graph(10000, 2, [0.8, 0.8], .8)
     group_log_log_plots(g)
 
-    g = generate_powerlaw_group_graph(1000, 2, [0.5, 0.5], .8)
+    g = generate_powerlaw_group_graph(10000, 2, [0.5, 0.5], .8)
     group_log_log_plots(g)
 
-    g = generate_powerlaw_group_graph(1000, 2, [0.2, 0.2], .8)
+    g = generate_powerlaw_group_graph(10000, 2, [0.2, 0.2], .8)
     group_log_log_plots(g)
 
-    g = generate_powerlaw_group_graph(1000, 2, [0.0, 0.0], .8)
+    # seems like there's an error on this one
+    g = generate_powerlaw_group_graph(10000, 2, [0.0, 0.0], .8)
     group_log_log_plots(g)
