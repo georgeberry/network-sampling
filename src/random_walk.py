@@ -16,7 +16,7 @@ def sample_random_walk(
 
 	"""
 	Sample the initial set of seed nodes.
-	Right now this is being done without replacement,
+	Right now this is being done with replacement,
 	is that okay?
 	"""
 	g_nodes = g.nodes(data=True)
