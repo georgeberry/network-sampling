@@ -49,4 +49,4 @@ if __name__ == "__main__":
 	import graph_gen as gg 
 	g = gg.generate_powerlaw_group_graph(1000,2,[0.8,0.8],.5)
 	counts = sample_random_walk(g, 10, 50)[0]
-	print counts
+	print(counts)
