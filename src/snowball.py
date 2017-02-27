@@ -1,8 +1,8 @@
 import random
-
+from graph_gen import generate_powerlaw_group_graph
 
 def sample_random_walk(
-        g,  # Graph to sample from
+        g, # Graph to sample from
         n_seeds,
         n_steps):
     sampled_nodes = set()
@@ -12,7 +12,7 @@ def sample_random_walk(
         ('a', 'a'): 0,
         ('a', 'b'): 0,
         ('b', 'b'): 0,
-        ('b', 'a'): 0
+        ('b', 'a'): 0,
     }
 
     """
@@ -41,8 +41,6 @@ def sample_random_walk(
 
 
 if __name__ == "__main__":
-    import graph_gen as gg
-
-    g = gg.generate_powerlaw_group_graph(1000, 2, [0.8, 0.8], .5)
+    g = generate_powerlaw_group_graph(1000, 2, [0.8, 0.8], .5)
     counts = sample_random_walk(g, 10, 50)[0]
     print(counts)
