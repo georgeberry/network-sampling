@@ -29,7 +29,7 @@ def sample_random_walk(
 		new_nodes = []
 		for node in sampling_nodes:
 			# For each node, pick an edge to follow
-			next_node = random.choice(g[node].keys())
+			next_node = random.choice(list(g[node]))
 
 			# The nodes at the end of these edges are the new batch.
 			new_nodes += [next_node]
