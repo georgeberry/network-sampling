@@ -1,9 +1,23 @@
 from graph_gen import generate_powerlaw_group_graph
+import networkx
 import node_sample
 import edge_sample
 import random_walk
 import snowball
 import json
+
+def population(g):
+    link_counts = {
+        ('a', 'a'): 0,
+        ('a', 'b'): 0,
+        ('b', 'b'): 0,
+        ('b', 'a'): 0,
+    }
+
+    for edge in g.edges_iter():
+        link_counts[(g.node[edge[0]]['group'],g.node[edge[1]]['group'])] += 1
+
+    return link_counts
 
 homophily_values = [(1.0,1.0), (0.8,0.8), (0.5,0.5), (0.2,0.2), (0.0,0.0)]
 majority_sizes = [0.8,0.5]
@@ -12,7 +26,8 @@ sampling_methods = {node_sample.sample_random_nodes : (200,),
                     node_sample.sample_ego_networks : (20,),
                     edge_sample.sample_random_edges : (200,),
                     random_walk.sample_random_walk : (10,20),
-                    snowball.sample_snowball : (5,3)}
+                    snowball.sample_snowball : (5,3),
+                    population: ()}
 graph_size = 1000
 sample_size = 1000
 samples_per_graph = 100
