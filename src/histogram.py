@@ -1,5 +1,6 @@
 import json
 import matplotlib.pyplot as plt
+import numpy as np
 
 def generate_histogram(
     method,
@@ -7,10 +8,18 @@ def generate_histogram(
     h, #homophily
     f): #probability of majority group
     
-    f = open('data/{}({}, {}){}{}.json'.format(
+    g = open('data/{}({}, {}){}{}.json'.format(
             method,h[0],h[1],f,m),'r')
-    data = json.load(f)
-    f.close()
+    data = json.load(g)
+    g.close()
+
+    g = open('data/{}({}, {}){}{}.json'.format(
+            'population',h[0],h[1],f,m),'r')
+    t_data = json.load(g)
+    g.close()
+
+    t_mean = np.mean([d["('a', 'a')"]/(d["('a', 'b')"]+d["('b', 'a')"]+d["('a', 'a')"]) 
+            for d in t_data])
 
     hist = [d["('a', 'a')"]/(d["('a', 'b')"]+d["('b', 'a')"]+d["('a', 'a')"]) 
             for d in data]
@@ -18,6 +27,9 @@ def generate_histogram(
     #Graph the histogram
     fig, ax = plt.subplots()
     ax.hist(hist, bins=50, normed=True)
+
+    plt.axvline(t_mean, color = 'r', linestyle='dashed', linewidth=2)
+    
     plt.show()
 
 if __name__ == "__main__":
