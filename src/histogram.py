@@ -20,7 +20,17 @@ def generate_histogram(
 
     t_mean = np.mean([d["('a', 'a')"]/(d["('a', 'b')"]+d["('b', 'a')"]+d["('a', 'a')"]) 
             for d in t_data])
+    s_mean = np.mean([d["('a', 'a')"]/(d["('a', 'b')"]+d["('b', 'a')"]+d["('a', 'a')"]) 
+            for d in data])
 
+    s_var = np.var([d["('a', 'a')"]/(d["('a', 'b')"]+d["('b', 'a')"]+d["('a', 'a')"]) 
+            for d in data])
+
+    print("True Mean: " + str(t_mean))
+    print("Sample Mean: " + str(s_mean))
+
+    print("True Variance: " + str(t_var))
+    print("Sample Variance: " + str(s_var))
     hist = [d["('a', 'a')"]/(d["('a', 'b')"]+d["('b', 'a')"]+d["('a', 'a')"]) 
             for d in data]
 
@@ -28,7 +38,8 @@ def generate_histogram(
     fig, ax = plt.subplots()
     ax.hist(hist, bins=50, normed=True)
 
-    plt.axvline(t_mean, color = 'r', linestyle='dashed', linewidth=2)
+    plt.axvline(s_mean, color = 'r', linestyle='dashed', linewidth=2)
+    plt.axvline(t_mean, color = 'y', linestyle='dashed', linewidth=2)
     
     plt.show()
 
