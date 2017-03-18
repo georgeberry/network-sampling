@@ -1,4 +1,5 @@
 import random
+import networkx as nx
 
 def sample_snowball(
         g, # Graph to sample from
@@ -13,6 +14,8 @@ def sample_snowball(
         ('b', 'b'): 0,
         ('b', 'a'): 0,
     }
+
+    g_groups = nx.get_node_attributes(g,'group')
 
     g_nodes = g.nodes(data=True)
     seeds = set(random.sample(g.nodes(), n_seeds))
@@ -31,8 +34,8 @@ def sample_snowball(
                         next_frontier.add(neighbor)
                     elif (node, neighbor) not in sampled_edges and (neighbor, node) not in sampled_edges:
                         sampled_edges.add((node, neighbor))
-                        link_counts[(g_nodes[node][1]['group'],
-                                     g_nodes[neighbor][1]['group'])] += 1
+                        link_counts[(g_groups[node], 
+                            g_groups[neighbor])] += 1
             frontier = next_frontier
         sampled_nodes |= frontier
         sampled_nodes_all += sampled_nodes

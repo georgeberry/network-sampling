@@ -19,7 +19,7 @@ def sample_random_nodes(g, n_sample):
         ('b', 'a'): 0,
     }
 
-    node_list = list(range(g.number_of_nodes()))
+    node_list = g.nodes()
     sampled_nodes = np.random.choice(node_list, size=n_sample, replace=False)
 
     s = g.subgraph(sampled_nodes) # s for subgraph
@@ -41,7 +41,7 @@ def sample_ego_networks(g, n_sample):
         ('b', 'a'): 0,
     }
 
-    node_list = list(range(g.number_of_nodes()))
+    node_list = g.nodes()
     sampled_nodes = np.random.choice(node_list, size=n_sample, replace=False)
 
     for ego in sampled_nodes:

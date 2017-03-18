@@ -1,4 +1,5 @@
 import random
+import networkx as nx
 from graph_gen import generate_powerlaw_group_graph
 
 def sample_random_walk(
@@ -15,6 +16,8 @@ def sample_random_walk(
         ('b','a') : 0,
     }
 
+    g_groups = nx.get_node_attributes(g,'group')
+
     """
     Sample the initial set of seed nodes.
     Right now this is being done with replacement,
@@ -22,6 +25,7 @@ def sample_random_walk(
     """
     g_nodes = g.nodes(data=True)
     sampling_nodes = random.sample(g.nodes(),n_seeds)
+
 
     for step in range(n_steps):
         # We store all sampled nodes just in case
@@ -37,9 +41,10 @@ def sample_random_walk(
             # The nodes at the end of these edges are the new batch.
             new_nodes += [next_node]
             sampled_edges += [(node,next_node)]
+
             # Update the list of link counts for the sampled edge
-            link_counts[(g_nodes[node][1]['group'],
-                g_nodes[next_node][1]['group'])] += 1
+            link_counts[(g_groups[node],
+                g_groups[next_node])] += 1
 
         sampling_nodes = new_nodes
 
