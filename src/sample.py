@@ -31,9 +31,9 @@ homophily_values = [(0.5,0.5)]
 majority_sizes = [0.8,0.5]
 mean_deg = [2]
 filters = { filter_none : (),
-            graph_filter.filter : ('b',0,0.2),
-            graph_filter.filter : ('a',0,0.2),
-            graph_filter.filter : ('a',0.8,1)}
+            graph_filter.graph_filter : ('b',0,0.2),
+            graph_filter.graph_filter : ('a',0,0.2),
+            graph_filter.graph_filter : ('a',0.8,1)}
 
 sampling_methods = {node_sample.sample_random_nodes : (200,),
                     node_sample.sample_ego_networks : (20,),
@@ -59,7 +59,7 @@ for parameters in itertools.product(
                 graph_size, deg, h, s)
             g = fil[0](g, *fil[1])
         for method, args in sampling_methods.items():
-            counts[method] += [{str(k):v 
+            counts[method] += [{str(k):v
                 for k,v in method(g, *args).items()}]
     for c_method, sample in counts.items():
         f = open('data/{}{}.json'.format(
@@ -67,4 +67,3 @@ for parameters in itertools.product(
         json.dump(sample,f)
         f.close()
     print("Completed h: {}, s: {}, deg: {}.".format(h,s,deg))
-

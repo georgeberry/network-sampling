@@ -1,4 +1,4 @@
-def filter(graph, group, min_homo=0, max_homo=1):
+def graph_filter(graph, group, min_homo=0, max_homo=1):
     filtered = set()
     g_nodes = graph.nodes(data=True)
     for node in graph:
