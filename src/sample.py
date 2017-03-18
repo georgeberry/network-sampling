@@ -88,6 +88,5 @@ for parameters in itertools.product(
                 c_method[0].__name__, s_params), 'w+')
         json.dump(sample,f)
         f.close()
-
+        
     print("Completed {}.".format(s_params))
-
