@@ -39,7 +39,7 @@ def stringify_parameters(parameters):
                 connect = "-"
         elif callable(p):
             stringified += (connect + p.__name__)
-            connect = ":"
+            connect = "-"
         else:
             stringified += (connect + str(p))
             connect = "-"
@@ -49,9 +49,9 @@ homophily_values = [(0.8,0.8),(0.5,0.5),(0.2,0.2)]
 majority_sizes = [0.8,0.5]
 mean_deg = [4]
 filters = [ (filter_none , ()),
-            (graph_filter.filter , ('b',0,0.2)),
-            (graph_filter.filter , ('a',0,0.2)),
-            (graph_filter.filter , ('a',0.8,1))]
+            (graph_filter.graph_filter , ('b',0,0.2)),
+            (graph_filter.graph_filter , ('a',0,0.2)),
+            (graph_filter.graph_filter , ('a',0.8,1))]
 
 sampling_methods = [(node_sample.sample_random_nodes , (200,)),
                     (node_sample.sample_ego_networks , (20,)),
@@ -69,7 +69,6 @@ for parameters in itertools.product(
     mean_deg,
     filters):
     
-
     h, s, deg, fil = parameters
     s_params = stringify_parameters(parameters)
 
@@ -84,9 +83,9 @@ for parameters in itertools.product(
             counts[(method,args)] += [{str(k):v 
                 for k,v in method(g, *args).items()}]
     for c_method, sample in counts.items():
-        f = open('data/{}{}.json'.format(
+        f = open('data/{}-{}.json'.format(
                 c_method[0].__name__, s_params), 'w+')
         json.dump(sample,f)
         f.close()
-        
+
     print("Completed {}.".format(s_params))
