@@ -157,3 +157,4 @@ with open('../sim_output/output.csv', 'w') as f:
                             samp_result[('b','b')],
                         ]
                         writer.writerow(output_line)
+            print('Done with {}'.format(output_line[:6]))
