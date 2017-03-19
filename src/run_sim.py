@@ -73,10 +73,10 @@ MEAN_DEG = [4]
 
 # These are the various filters we apply to the graph
 #
-FILTERS = [(filter_none , ())]
-           # (graph_filter, ('b',0,0.2)),
-           # (graph_filter, ('a',0,0.2)),
-           # (graph_filter, ('a',0.8,1))]
+FILTERS = [(filter_none , ()),
+           (graph_filter, ('b', 0, 0.2)),
+           (graph_filter, ('a', 0, 0.2)),
+           (graph_filter, ('a', 0.8, 1))]
 
 # function: param_tuple
 SAMPLING_METHODS = [(sample_random_nodes, (200,)),
