@@ -17,9 +17,12 @@ def sample_random_edges(g, e_sample):
 
     edge_idx_list = list(range(g.number_of_edges()))
 
-    sampled_edges = set(
-        np.random.choice(edge_idx_list, size=e_sample, replace=False)
-    )
+    if e_sample >= len(edge_idx_list):
+        sampled_edges = set(edge_idx_list)
+    else:
+        sampled_edges = set(
+            np.random.choice(edge_idx_list, size=e_sample, replace=False)
+        )
 
     for idx, edge in enumerate(g.edges_iter()):
         if idx in sampled_edges:

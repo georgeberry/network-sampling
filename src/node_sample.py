@@ -20,7 +20,10 @@ def sample_random_nodes(g, n_sample):
     }
 
     node_list = g.nodes()
-    sampled_nodes = np.random.choice(node_list, size=n_sample, replace=False)
+    if n_sample >= len(node_list):
+        sampled_nodes = node_list
+    else:
+        sampled_nodes = np.random.choice(node_list, size=n_sample, replace=False)
 
     s = g.subgraph(sampled_nodes) # s for subgraph
 
