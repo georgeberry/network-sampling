@@ -139,22 +139,28 @@ with open('../sim_output/output.csv', 'w') as f:
                 for filter_fn, filter_args in FILTERS:
                     g_filtered = filter_fn(g, *filter_args)
                     for samp_fn, samp_args in SAMPLING_METHODS:
-                        samp_result = samp_fn(g_filtered, *samp_args)
-                        output_line = [
-                            g_idx,
-                            samp_idx,
-                            h[0],
-                            h[1],
-                            s,
-                            d,
-                            filter_fn.__name__,
-                            str(filter_args),
-                            samp_fn.__name__,
-                            str(samp_args),
-                            samp_result[('a','a')],
-                            samp_result[('a','b')],
-                            samp_result[('b','a')],
-                            samp_result[('b','b')],
-                        ]
-                        writer.writerow(output_line)
+                        try:
+                            samp_result = samp_fn(g_filtered, *samp_args)
+                            output_line = [
+                                g_idx,
+                                samp_idx,
+                                h[0],
+                                h[1],
+                                s,
+                                d,
+                                filter_fn.__name__,
+                                str(filter_args),
+                                samp_fn.__name__,
+                                str(samp_args),
+                                samp_result[('a','a')],
+                                samp_result[('a','b')],
+                                samp_result[('b','a')],
+                                samp_result[('b','b')],
+                            ]
+                            writer.writerow(output_line)
+                        except:
+                            print('Failed on {}, {}'.format(
+                                filter_fn.__name__,
+                                samp_fn.__name__,
+                            ))
             print('Done with {}'.format(output_line[:6]))
