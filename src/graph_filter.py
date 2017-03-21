@@ -1,4 +1,4 @@
-def graph_filter(graph, group, min_homo=0, max_homo=1):
+def graph_filter(graph, group, min_h=0, max_h=1):
     filtered = set()
     g_nodes = graph.nodes(data=True)
     for node in graph:
@@ -6,14 +6,14 @@ def graph_filter(graph, group, min_homo=0, max_homo=1):
         # conditionals for exclusion from the filtered graph
         # has to be in targeted group
         if g_nodes[node][1]['group'] == group:
-            homocount = 0
+            ingrp_count = 0
             total = 0
             for neighbor in graph[node]:
                 if g_nodes[neighbor][1]['group'] == group:
-                    homocount += 1
+                    ingrp_count += 1
                 total += 1
             # homophily has to be out of parameters
-            if total <= 0 or homocount/total < min_homo or homocount/total > max_homo:
+            if total <= 0 or ingrp_count/total < min_h or ingrp_count/total > max_h:
                 filtered.add(node)
 
     # remove the filtered nodes

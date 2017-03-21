@@ -72,7 +72,6 @@ MAJORITY_SIZES = [0.8, 0.5]
 MEAN_DEG = [4]
 
 # These are the various filters we apply to the graph
-#
 FILTERS = [(filter_none , ()),
            (graph_filter, ('b', 0, 0.2)),
            (graph_filter, ('a', 0, 0.2)),
