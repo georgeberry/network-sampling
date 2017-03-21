@@ -137,11 +137,10 @@ with open('../sim_output/output.csv', 'w') as f:
     writer = csv.writer(f)
     writer.writerow(csv_colnames)
     # Start big loop here
-    for h, s, d, f in itertools.product(
+    for h, s, d in itertools.product(
         HOMOPHILY_VALUES,
         MAJORITY_SIZES,
         MEAN_DEG,
-        FILTERS
     ):
         for g_idx in range(N_GRAPHS):
             g = generate_powerlaw_group_graph(GRAPH_SIZE, d, h, s)
