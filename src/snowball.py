@@ -3,11 +3,15 @@ import networkx as nx
 
 def sample_snowball(
         g, # Graph to sample from
-        n_seeds,
-        n_steps):
+        max_links,
+        n_seeds):
 
-    sampled_nodes_all = []
-    sampled_edges_all = []
+    # stuff to output
+    node_counts = {
+        'a': 0,
+        'b': 0,
+    }
+
     link_counts = {
         ('a', 'a'): 0,
         ('a', 'b'): 0,
@@ -15,38 +19,57 @@ def sample_snowball(
         ('b', 'a'): 0,
     }
 
+    sampled_nodes_all = set()
+    sampled_edges_all = set()
+    edges_per_seed = max_links / n_seeds
     g_groups = nx.get_node_attributes(g,'group')
 
-    g_nodes = g.nodes(data=True)
     seeds = set(random.sample(g.nodes(), n_seeds))
 
     for seed in seeds:
         sampled_nodes = set()
-        sampled_edges = set()
-        frontier = set([seed])
+        group_checked_edges = set() # tally each node's group
+        frontier_nodes = set([seed])
+        frontier_edges = set()
+        sampled_edges = 0
 
-        for _ in range(n_steps):
-            next_frontier = set()
-            sampled_nodes |= frontier
-            for node in frontier:
-                for neighbor in g[node].keys():
-                    if neighbor not in sampled_nodes:
-                        next_frontier.add(neighbor)
-                    elif (node, neighbor) not in sampled_edges and (neighbor, node) not in sampled_edges:
-                        sampled_edges.add((node, neighbor))
-                        link_counts[(g_groups[node], 
-                            g_groups[neighbor])] += 1
-            frontier = next_frontier
-        sampled_nodes |= frontier
-        sampled_nodes_all += sampled_nodes
-        sampled_edges_all += sampled_edges
+        # algorithm:
+        # get neighbors of a focal node
+        # add these to frontier nodes
+        # add the edges to frontier edges
+        # record the values of frontier edges
+        # when there are no edges, go to next node
 
-    return link_counts
+        while len(frontier_nodes) > 0:
+            focal_node = frontier_nodes.pop()
+            nbrs = g.neighbors(focal_node)
+            frontier_nodes |= set(nbrs)
+            frontier_edges |= set([(focal_node, x) for x in nbrs])
+            while len(frontier_edges) > 0:
+                n1, n2 = frontier_edges.pop()
+                g1, g2 = g_groups[n1], g_groups[n2]
+                link_counts[(g1, g2)] += 1 # increment link count
+                sampled_edges += 1
+
+                if n1 not in group_checked_edges:
+                    node_counts[g1] += 1
+                    group_checked_edges.add(n1)
+                if n2 not in group_checked_edges:
+                    node_counts[g2] += 1
+                    group_checked_edges.add(n2)
+
+                if sampled_edges >= edges_per_seed:
+                    break
+            sampled_nodes.add(focal_node)
+            if sampled_edges >= edges_per_seed:
+                break
+
+    return node_counts, link_counts
 
 
 if __name__ == "__main__":
     import graph_gen as gg
 
     g = gg.generate_powerlaw_group_graph(1000, 2, [0.8, 0.8], .5)
-    counts = sample_snowball(g, 10, 2)
+    counts = sample_snowball(g, 200, 2)
     print(counts)

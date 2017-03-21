@@ -9,6 +9,12 @@ def sample_random_walk(
 
     sampled_nodes = []
     sampled_edges = []
+
+    node_counts = {
+        'a': 0,
+        'b': 0,
+    }
+
     link_counts = {
         ('a','a') : 0,
         ('a','b') : 0,
@@ -43,14 +49,15 @@ def sample_random_walk(
             sampled_edges += [(node,next_node)]
 
             # Update the list of link counts for the sampled edge
-            link_counts[(g_groups[node],
-                g_groups[next_node])] += 1
+            g1, g2 = g_groups[node], g_groups[next_node]
+            link_counts[(g1, g2)] += 1
+            node_counts[g1] += 1 # only add one of the nodes
 
         sampling_nodes = new_nodes
 
     sampled_nodes += sampling_nodes
 
-    return link_counts
+    return node_counts, link_counts
 
 
 if __name__ == "__main__":

@@ -150,3 +150,8 @@ p3 = plot_df %>%
 # TODO: better align sizes of edge samples
 # TODO: better frame question: what useful thing are we trying to give the world?
 # TODO: is filter function wrong?
+
+
+# TODO: make plot with valence of miss
+
+# TODO: make sampling methods generators 
