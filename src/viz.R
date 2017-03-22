@@ -11,24 +11,68 @@ df = fread("~/Drive/project-RA/network-sampling/sim_output/output.csv") %>%
     filter_fn,
     filter_fn_args,
     samp_fn,
+    a,
+    b,
     aa,
     ab,
     ba,
     bb) %>%
   mutate(
-    tot = aa + ab + ba + bb, #sum
+    n_tot = a + b,
+    e_tot = aa + ab + ba + bb, #sum
     cg = ab + ba, # cg = crossgroup
     wg = aa + bb) %>% # wg = within_group
-  mutate( # normalize
-    aa = aa / tot,
-    ab = ab / tot,
-    ba = ba / tot,
-    bb = bb / tot,
-    cg = cg / tot,
-    wg = wg / tot
-  )
+  mutate(
+    h_a = (aa / (aa + ab + ba) - a/n_tot) / (1 - a/n_tot),
+    h_b = (bb / (bb + ab + ba) - b/n_tot) / (1 - b/n_tot),
+    # normalize
+    a = a / n_tot,
+    b = b / n_tot,
+    aa = aa / e_tot,
+    ab = ab / e_tot,
+    ba = ba / e_tot,
+    bb = bb / e_tot,
+    cg = cg / e_tot,
+    wg = wg / e_tot)
 
-#### Homophily by variance plots ###############################################
+# Select non-filtered runs
+samp_df = df %>%
+  filter(filter_fn == "filter_none", samp_fn != "population") %>%
+  group_by(samp_fn, g_idx, homophily_a, maj_size)
+
+# True vals
+pop_df = df %>%
+  filter(filter_fn == "filter_none", samp_fn == "population") %>%
+  group_by(g_idx, homophily_a, maj_size) %>%
+  summarize(
+    a_mu = mean(a),
+    b_mu = mean(b),
+    aa_mu = mean(aa),
+    ab_mu = mean(ab),
+    ba_mu = mean(ba),
+    bb_mu = mean(bb),
+    cg_mu = mean(cg),
+    wg_mu = mean(wg),
+    h_a_mu = mean(h_a),
+    h_b_mu = mean(h_b))
+
+base_df = samp_df %>%
+  left_join(pop_df, c("g_idx" = "g_idx",
+                      "homophily_a" = "homophily_a",
+                      "maj_size" = "maj_size")) %>%
+  mutate(
+    a_err = a - a_mu,
+    b_err = b - b_mu,
+    aa_err = aa - aa_mu,
+    ab_err = ab - ab_mu,
+    ba_err = ba - ba_mu,
+    bb_err = bb - bb_mu,
+    cg_err = cg - cg_mu,
+    wg_err = wg - wg_mu,
+    h_a_err = h_a - h_a_mu,
+    h_b_err = h_b - h_b_mu)
+
+#### Cross-group MSE plots ######################################################
 
 # Analysis plan: compare each sim run (100) with the true mean for the run
 # Plot MSE and the variance of MSE
@@ -45,113 +89,219 @@ df = fread("~/Drive/project-RA/network-sampling/sim_output/output.csv") %>%
 # - samp_fn one of: sample_random_nodes, sample_ego_networks,
 #   sample_random_edges, sample_random_walk, sample_snowball, population
 
-# Select non-filtered runs
-samp_df = df %>%
-  filter(filter_fn == "filter_none", samp_fn != "population") %>%
-  group_by(samp_fn, g_idx, homophily_a, maj_size) %>%
-  top_n(100)
-
-# True vals
-pop_df = df %>%
-  filter(filter_fn == "filter_none", samp_fn == "population") %>%
-  group_by(g_idx, homophily_a, maj_size) %>%
-  top_n(100) %>%
-  summarize(
-    aa_mu = mean(aa),
-    ab_mu = mean(ab),
-    ba_mu = mean(ba),
-    bb_mu = mean(bb),
-    cg_mu = mean(cg),
-    wg_mu = mean(wg))
-
 # Join true vals to samples
 # Need to group in 2 steps: group w/in graphs then b/t graphs
-plot_df = samp_df %>%
-  left_join(pop_df, c("g_idx" = "g_idx",
-                      "homophily_a" = "homophily_a",
-                      "maj_size" = "maj_size")) %>%
-  # create error statistics for each run
-  mutate(
-    aa_err = aa - aa_mu,
-    ab_err = ab - ab_mu,
-    ba_err = ba - ba_mu,
-    bb_err = bb - bb_mu,
-    cg_err = cg - cg_mu,
-    wg_err = wg - wg_mu) %>%
+cg_plot_df = base_df %>%
   # group w/in graph runs
   group_by(g_idx, samp_fn, homophily_a, maj_size) %>%
   summarize(
-    aa_rmse = sqrt(mean(aa_err^2)),
-    ab_rmse = sqrt(mean(ab_err^2)),
-    ba_rmse = sqrt(mean(ba_err^2)),
-    bb_rmse = sqrt(mean(bb_err^2)),
     cg_rmse = sqrt(mean(cg_err^2)),
-    wg_rmse = sqrt(mean(wg_err^2))) %>%
-    # aa_sd_err = sd(aa_err^2),
-    # ab_sd_err = sd(ab_err^2),
-    # ba_sd_err = sd(ba_err^2),
-    # bb_sd_err = sd(bb_err^2),
-    # cg_sd_err = sd(cg_err^2),
-    #wg_sd_err = sd(wg_err^2)) %>%
+    cg_diff = mean(cg_err),
+    cg_mu = mean(cg_mu)) %>%
   # aggregate across graph runs
   group_by(samp_fn, homophily_a, maj_size) %>%
   summarize(
-    aa_mmse = mean(aa_rmse),
-    ab_mmse = mean(ab_rmse),
-    ba_mmse = mean(ba_rmse),
-    bb_mmse = mean(bb_rmse),
-    cg_mmse = mean(cg_rmse),
-    wg_mmse = mean(wg_rmse),
-    aa_sd_mse = sd(aa_rmse),
-    ab_sd_mse = sd(ab_rmse),
-    ba_sd_mse = sd(ba_rmse),
-    bb_sd_mse = sd(bb_rmse),
+    cg_m_rmse = mean(cg_rmse),
     cg_sd_mse = sd(cg_rmse),
-    wg_sd_mse = sd(wg_rmse))
-
+    cg_m_diff = mean(cg_diff),
+    cg_mu = mean(cg_mu)) %>%
+  mutate(hom_majsz=paste0(homophily_a, '|', maj_size))
 
 # TODO: change this plot to be relative to the baseline nubmer of cg ties
 # Even group sizes, by homophily
-p1 = plot_df %>%
+p1 = cg_plot_df %>%
   filter(maj_size == 0.5) %>%
   ggplot(.) +
-  geom_point(aes(x = factor(homophily_a), y = cg_mmse, color=samp_fn),
+  geom_point(aes(x = factor(homophily_a), y = cg_m_rmse, color=samp_fn),
              position=position_dodge(width=0.5)) +
-  geom_errorbar(aes(x = factor(homophily_a), ymin = cg_mmse - 1.96 * cg_sd_mse, ymax = cg_mmse + 1.96 * cg_sd_mse, color=samp_fn), position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(x = factor(homophily_a), ymin = cg_m_rmse - 1.96 * cg_sd_mse, ymax = cg_m_rmse + 1.96 * cg_sd_mse, color=samp_fn), position=position_dodge(width=0.5)) +
   geom_hline(aes(yintercept=0), linetype='dashed') +
+  labs(title="RMSE for fraction of cross-group ties, equal sized groups",
+       x=element_blank(),
+       y="Cross-group fraction RMSE") +
   theme_bw()
 
-p2 = plot_df %>%
+p2 = cg_plot_df %>%
   filter(maj_size == 0.8) %>%
   ggplot(.) +
-  geom_point(aes(x = factor(homophily_a), y = cg_mmse, color=samp_fn),
+  geom_point(aes(x = factor(homophily_a), y = cg_m_rmse, color=samp_fn),
              position=position_dodge(width=0.5)) +
-  geom_errorbar(aes(x = factor(homophily_a), ymin = cg_mmse - 1.96 * cg_sd_mse, ymax = cg_mmse + 1.96 * cg_sd_mse, color=samp_fn), position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(x = factor(homophily_a), ymin = cg_m_rmse - 1.96 * cg_sd_mse, ymax = cg_m_rmse + 1.96 * cg_sd_mse, color=samp_fn), position=position_dodge(width=0.5)) +
   geom_hline(aes(yintercept=0), linetype='dashed') +
+  labs(title="RMSE for fraction of cross-group ties, maj group = 0.8",
+       x=element_blank(),
+       y="Cross-group fraction RMSE") +
   theme_bw()
-
-
 
 # Method on x axis
-p3 = plot_df %>%
+p3 = cg_plot_df %>%
   ggplot(.) +
-  geom_point(aes(x = factor(samp_fn), y = cg_mmse, color=factor(paste0(homophily_a, '|', maj_size))),
-             position=position_dodge(width=0.5)) +
-  geom_errorbar(aes(x = factor(samp_fn), ymin = cg_mmse - 1.96 * cg_sd_mse, ymax = cg_mmse + 1.96 * cg_sd_mse, color=factor(paste0(homophily_a, '|', maj_size))), position=position_dodge(width=0.5)) +
+  geom_point(aes(x = factor(samp_fn), y = cg_m_rmse, color=factor(hom_majsz)),
+               position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(x = factor(samp_fn), ymin = cg_m_rmse - 1.96 * cg_sd_mse, ymax = cg_m_rmse + 1.96 * cg_sd_mse, color=factor(hom_majsz)), position=position_dodge(width=0.5)) +
   geom_hline(aes(yintercept=0), linetype='dashed') +
+  labs(title="RMSE for fraction of cross-group ties by sampling method",
+       x=element_blank(),
+       y="Cross-group fraction RMSE") +
   theme_bw()
 
+#### Disaggregated plots to assess bias vs variance #############################
+
+cg_disagg_plot_df = base_df %>%
+  filter(g_idx == 0) %>%
+  mutate(hom_majsz = paste(homophily_a, maj_size, sep="|"))
+
+p4 = cg_disagg_plot_df %>%
+  ggplot(.) +
+  geom_hline(aes(yintercept=0), linetype='dashed') +
+  geom_point(aes(x = factor(samp_fn), y = cg_err, color=hom_majsz),
+                 position=position_dodge(width=0.5)) +
+  labs(title="Error for fraction of cross group ties (one run)",
+       x=element_blank(),
+       y="Cross-group fraction RMSE") +
+  theme_bw()
+
+#### Group size plots ###########################################################
+
+grp_plot_df = base_df %>%
+  # group w/in graph runs
+  group_by(g_idx, samp_fn, homophily_a, maj_size) %>%
+  summarize(
+    a_rmse = sqrt(mean(a_err^2)),
+    a_diff = mean(a_err),
+    a_mu = mean(a_mu)) %>%
+  # aggregate across graph runs
+  group_by(samp_fn, homophily_a, maj_size) %>%
+  summarize(
+    a_m_rmse = mean(a_rmse),
+    a_sd_mse = sd(a_rmse),
+    a_m_diff = mean(a_diff),
+    a_mu = mean(a_mu)) %>%
+    mutate(hom_majsz=paste0(homophily_a, '|', maj_size))
+
+p5 = grp_plot_df %>%
+  ggplot(.) +
+  geom_point(aes(x = factor(samp_fn), y = a_m_rmse, color=factor(hom_majsz)),
+               position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(x = factor(samp_fn), ymin = a_m_rmse - 1.96 * a_sd_mse, ymax = a_m_rmse + 1.96 * a_sd_mse, color=factor(hom_majsz)), position=position_dodge(width=0.5)) +
+  geom_hline(aes(yintercept=0), linetype='dashed') +
+  labs(title="RMSE for majority group size by sampling method",
+       x=element_blank(),
+       y="Majority group size RMSE") +
+  theme_bw()
+
+grp_disagg_plot_df = base_df %>%
+  filter(g_idx == 0) %>%
+  mutate(hom_majsz = paste(homophily_a, maj_size, sep="|"))
+
+p6 = grp_disagg_plot_df %>%
+  ggplot(.) +
+  geom_hline(aes(yintercept=0), linetype='dashed') +
+  geom_point(aes(x = factor(samp_fn), y = a_err, color=hom_majsz),
+                 position=position_dodge(width=0.5)) +
+  labs(title="Error for size of majority group (one run)",
+       x=element_blank(),
+       y="Cross-group fraction RMSE") +
+  theme_bw()
+
+#### MSE vs group size accuracy #################################################
+
+tradeoff_df = base_df %>%
+  # group w/in graph runs
+  group_by(g_idx, samp_fn, homophily_a, maj_size) %>%
+  summarize(
+    a_rmse = sqrt(mean(a_err^2)),
+    a_diff = mean(a_err),
+    a_mu = mean(a_mu),
+    cg_rmse = sqrt(mean(cg_err^2)),
+    cg_diff = mean(cg_err),
+    cg_mu = mean(cg_mu)) %>%
+  # aggregate across graph runs
+  group_by(samp_fn, homophily_a, maj_size) %>%
+  summarize(
+    a_m_rmse = mean(a_rmse),
+    a_sd_mse = sd(a_rmse),
+    a_m_diff = mean(a_diff),
+    a_mu = mean(a_mu),
+    cg_m_rmse = mean(cg_rmse),
+    cg_sd_mse = sd(cg_rmse),
+    cg_m_diff = mean(cg_diff),
+    cg_mu = mean(cg_mu)) %>%
+  group_by(samp_fn) %>%
+  summarize(a_m_rmse = mean(a_m_rmse),
+            cg_m_rmse = mean(cg_m_rmse))
+
+# clowny af
+id_e = 1-tradeoff_df[which(tradeoff_df$samp_fn=="sample_random_edges"),"cg_m_rmse"]$cg_m_rmse[[1]]
+id_n = 1-tradeoff_df[which(tradeoff_df$samp_fn=="sample_random_nodes"),"a_m_rmse"]$a_m_rmse[[1]]
+
+p7 = tradeoff_df %>%
+  ggplot(.) +
+  geom_segment(aes(x=1.0, y=1.0, xend=1.0, yend=-Inf), linetype="twodash") +
+  geom_segment(aes(x=1.0, y=1.0, xend=-Inf, yend=1.0), linetype="twodash") +
+  geom_segment(aes(x=id_n, y=id_e, xend=-Inf, yend=id_e), linetype="dashed") +
+  geom_segment(aes(x=id_n, y=id_e, xend=id_n, yend=-Inf), linetype="dashed") +
+  # geom_segment(aes(xintercept=1.0), linetype="twodash") +
+  # geom_segment(aes(xend=id_e_val), linetype="dashed") +
+  # geom_segment(aes(xintercept=ideal_node_samp_val), linetype="dashed") +
+  geom_point(aes(x = 1-a_m_rmse, y = 1-cg_m_rmse, color = samp_fn), size=8) +
+  lims(x = c(.9,1), y = c(.9,1)) +
+  labs(title="Comparison of sampling methods to ideal",
+       x="1 - RMSE for majority group size",
+       y="1 - RMSE for fraction of cross-group ties") +
+  theme_bw()
+
+#### Actual homophily numbers ###################################################
+
+h_plot_df = base_df %>%
+  # group w/in graph runs
+  group_by(g_idx, samp_fn, homophily_a, maj_size) %>%
+  summarize(
+    h_b_rmse = sqrt(mean(h_b_err^2)),
+    h_b_diff = mean(h_b_err),
+    h_b_mu = mean(h_b_mu)) %>%
+  # aggregate across graph runs
+  group_by(samp_fn, homophily_a, maj_size) %>%
+  summarize(
+    h_b_m_rmse = mean(h_b_rmse),
+    h_b_sd_mse = sd(h_b_rmse),
+    h_b_m_diff = mean(h_b_diff),
+    h_b_mu = mean(h_b_mu)) %>%
+  mutate(hom_majsz=paste0(homophily_a, '|', maj_size))
+
+
+p8 = h_plot_df %>%
+  ggplot(.) +
+  geom_point(aes(x = factor(samp_fn), y = h_b_m_rmse, color=factor(hom_majsz)),
+               position=position_dodge(width=0.5)) +
+  geom_errorbar(aes(x = factor(samp_fn), ymin = h_b_m_rmse - 1.96 * h_b_sd_mse, ymax = h_b_m_rmse + 1.96 * h_b_sd_mse, color=factor(hom_majsz)), position=position_dodge(width=0.5)) +
+  geom_hline(aes(yintercept=0), linetype='dashed') +
+  labs(title="Coleman's homophily index: minority group",
+       x=element_blank(),
+       y="RMSE") +
+  theme_bw()
+
+# TODO: this part
+# Plot: correct h val
+h_disagg_plot_df = base_df %>%
+  filter(g_idx == 0) %>%
+  mutate(hom_majsz = paste(homophily_a, maj_size, sep="|"))
+
+p9 = h_disagg_plot_df %>%
+  ggplot(.) +
+  geom_hline(aes(yintercept=0), linetype='dashed') +
+  geom_point(aes(x = factor(samp_fn), y = h_b_err, color=hom_majsz),
+                 position=position_dodge(width=0.5)) +
+  labs(title="Coleman's homophily index: minority group (one run)",
+       x=element_blank(),
+       y="RMSE") +
+  theme_bw()
+
+### Future to-dos ###############################################################
 
 # TODO: plot normality of error w/in runs
-# TODO: group sizes
 # TODO: convergence speed (in terms of # nodes visited)
 # TODO: throw in filters to this
-# TODO: change snowball to be more reasonable (sampling almost half the edges right now)
-# TODO: better align sizes of edge samples
 # TODO: better frame question: what useful thing are we trying to give the world?
 # TODO: is filter function wrong?
-
-
-# TODO: make plot with valence of miss
-
-# TODO: make sampling methods generators 
+# TODO: make sampling methods generators
