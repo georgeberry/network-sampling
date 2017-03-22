@@ -121,6 +121,8 @@ p1 = cg_plot_df %>%
        y="Cross-group fraction RMSE") +
   theme_bw()
 
+ggsave("~/Desktop/p1.png", plot=p1, height=5, width=8)
+
 p2 = cg_plot_df %>%
   filter(maj_size == 0.8) %>%
   ggplot(.) +
@@ -129,9 +131,13 @@ p2 = cg_plot_df %>%
   geom_errorbar(aes(x = factor(homophily_a), ymin = cg_m_rmse - 1.96 * cg_sd_mse, ymax = cg_m_rmse + 1.96 * cg_sd_mse, color=samp_fn), position=position_dodge(width=0.5)) +
   geom_hline(aes(yintercept=0), linetype='dashed') +
   labs(title="RMSE for fraction of cross-group ties, maj group = 0.8",
-       x=element_blank(),
+       x="",
        y="Cross-group fraction RMSE") +
   theme_bw()
+
+ggsave("~/Desktop/p2.png", plot=p2, height=5, width=8)
+
+
 
 # Method on x axis
 p3 = cg_plot_df %>%
@@ -140,10 +146,14 @@ p3 = cg_plot_df %>%
                position=position_dodge(width=0.5)) +
   geom_errorbar(aes(x = factor(samp_fn), ymin = cg_m_rmse - 1.96 * cg_sd_mse, ymax = cg_m_rmse + 1.96 * cg_sd_mse, color=factor(hom_majsz)), position=position_dodge(width=0.5)) +
   geom_hline(aes(yintercept=0), linetype='dashed') +
-  labs(title="RMSE for fraction of cross-group ties by sampling method",
-       x=element_blank(),
-       y="Cross-group fraction RMSE") +
-  theme_bw()
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("") +
+  ylab("Cross-group fraction RMSE") +
+  ggtitle("RMSE for fraction of cross-group ties by sampling method")
+
+ggsave("~/Desktop/p3.png", plot=p3, height=5, width=8)
+
 
 #### Disaggregated plots to assess bias vs variance #############################
 
@@ -156,10 +166,13 @@ p4 = cg_disagg_plot_df %>%
   geom_hline(aes(yintercept=0), linetype='dashed') +
   geom_point(aes(x = factor(samp_fn), y = cg_err, color=hom_majsz),
                  position=position_dodge(width=0.5)) +
-  labs(title="Error for fraction of cross group ties (one run)",
-       x=element_blank(),
-       y="Cross-group fraction RMSE") +
-  theme_bw()
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("") +
+  ylab("Cross-group fraction RMSE") +
+  ggtitle("Error for fraction of cross group ties (one run)")
+
+ggsave("~/Desktop/p4.png", plot=p4, height=5, width=8)
 
 #### Group size plots ###########################################################
 
@@ -185,10 +198,14 @@ p5 = grp_plot_df %>%
                position=position_dodge(width=0.5)) +
   geom_errorbar(aes(x = factor(samp_fn), ymin = a_m_rmse - 1.96 * a_sd_mse, ymax = a_m_rmse + 1.96 * a_sd_mse, color=factor(hom_majsz)), position=position_dodge(width=0.5)) +
   geom_hline(aes(yintercept=0), linetype='dashed') +
-  labs(title="RMSE for majority group size by sampling method",
-       x=element_blank(),
-       y="Majority group size RMSE") +
-  theme_bw()
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("") +
+  ylab("Majority group size RMSE") +
+  ggtitle("RMSE for majority group size by sampling method")
+
+
+ggsave("~/Desktop/p5.png", plot=p5, height=5, width=8)
 
 grp_disagg_plot_df = base_df %>%
   filter(g_idx == 0) %>%
@@ -199,10 +216,15 @@ p6 = grp_disagg_plot_df %>%
   geom_hline(aes(yintercept=0), linetype='dashed') +
   geom_point(aes(x = factor(samp_fn), y = a_err, color=hom_majsz),
                  position=position_dodge(width=0.5)) +
-  labs(title="Error for size of majority group (one run)",
-       x=element_blank(),
-       y="Cross-group fraction RMSE") +
-  theme_bw()
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("") +
+  ylab("Majority group fraction RMSE") +
+  ggtitle("Error for size of majority group (one run)")
+
+
+ggsave("~/Desktop/p6.png", plot=p6, height=5, width=8)
+
 
 #### MSE vs group size accuracy #################################################
 
@@ -237,8 +259,8 @@ id_n = 1-tradeoff_df[which(tradeoff_df$samp_fn=="sample_random_nodes"),"a_m_rmse
 
 p7 = tradeoff_df %>%
   ggplot(.) +
-  geom_segment(aes(x=1.0, y=1.0, xend=1.0, yend=-Inf), linetype="twodash") +
-  geom_segment(aes(x=1.0, y=1.0, xend=-Inf, yend=1.0), linetype="twodash") +
+  geom_segment(aes(x=1.0, y=1.0, xend=1.0, yend=-Inf)) +
+  geom_segment(aes(x=1.0, y=1.0, xend=-Inf, yend=1.0)) +
   geom_segment(aes(x=id_n, y=id_e, xend=-Inf, yend=id_e), linetype="dashed") +
   geom_segment(aes(x=id_n, y=id_e, xend=id_n, yend=-Inf), linetype="dashed") +
   # geom_segment(aes(xintercept=1.0), linetype="twodash") +
@@ -246,10 +268,13 @@ p7 = tradeoff_df %>%
   # geom_segment(aes(xintercept=ideal_node_samp_val), linetype="dashed") +
   geom_point(aes(x = 1-a_m_rmse, y = 1-cg_m_rmse, color = samp_fn), size=8) +
   lims(x = c(.9,1), y = c(.9,1)) +
-  labs(title="Comparison of sampling methods to ideal",
-       x="1 - RMSE for majority group size",
-       y="1 - RMSE for fraction of cross-group ties") +
-  theme_bw()
+  theme_bw() +
+  xlab("1 - RMSE for majority group size") +
+  ylab("1 - RMSE for fraction of cross-group ties") +
+  ggtitle("Comparison of sampling methods to ideal")
+
+
+ggsave("~/Desktop/p7.png", plot=p7, height=5, width=8)
 
 #### Actual homophily numbers ###################################################
 
@@ -276,10 +301,14 @@ p8 = h_plot_df %>%
                position=position_dodge(width=0.5)) +
   geom_errorbar(aes(x = factor(samp_fn), ymin = h_b_m_rmse - 1.96 * h_b_sd_mse, ymax = h_b_m_rmse + 1.96 * h_b_sd_mse, color=factor(hom_majsz)), position=position_dodge(width=0.5)) +
   geom_hline(aes(yintercept=0), linetype='dashed') +
-  labs(title="Coleman's homophily index: minority group",
-       x=element_blank(),
-       y="RMSE") +
-  theme_bw()
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("") +
+  ylab("RMSE") +
+  ggtitle("Coleman's homophily index: minority group")
+
+
+ggsave("~/Desktop/p8.png", plot=p8, height=5, width=8)
 
 # TODO: this part
 # Plot: correct h val
@@ -292,12 +321,51 @@ p9 = h_disagg_plot_df %>%
   geom_hline(aes(yintercept=0), linetype='dashed') +
   geom_point(aes(x = factor(samp_fn), y = h_b_err, color=hom_majsz),
                  position=position_dodge(width=0.5)) +
-  labs(title="Coleman's homophily index: minority group (one run)",
-       x=element_blank(),
-       y="RMSE") +
-  theme_bw()
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("") +
+  ylab("RMSE") +
+  ggtitle("Coleman's homophily index: minority group (one run)")
 
-### Future to-dos ###############################################################
+ggsave("~/Desktop/p9.png", plot=p9, height=5, width=8)
+
+####
+
+h_summary_df = base_df %>%
+  # group w/in graph runs
+  group_by(g_idx, samp_fn, homophily_a, maj_size) %>%
+  summarize(
+    h_b_rmse = sqrt(mean(h_b_err^2))) %>%
+  # aggregate across graph runs
+  group_by(samp_fn, homophily_a, maj_size) %>%
+  summarize(
+    h_b_m_rmse = mean(h_b_rmse),
+    h_b_sd_rmse = sd(h_b_rmse)) %>%
+  group_by(samp_fn) %>%
+  summarize(h_b_rmse = mean(h_b_m_rmse),
+            h_b_sd = mean(h_b_sd_rmse))
+
+p10 = h_summary_df %>%
+  ggplot(.) +
+  geom_bar(
+    aes(y=h_b_rmse, x=factor(samp_fn), fill=factor(samp_fn)),
+    position="dodge",
+    stat="identity") +
+  geom_errorbar(
+    aes(x=factor(samp_fn),
+    ymin=h_b_rmse - 1.96 * h_b_sd,
+    ymax=h_b_rmse + 1.96 * h_b_sd),
+    width=.5) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("") +
+  ylab("RMSE") +
+  ggtitle("Aggregated homophily RMSE by sampling method")
+
+ggsave("~/Desktop/p10.png", plot=p10, height=6, width=7)
+
+
+#### Future to-dos ##############################################################
 
 # TODO: plot normality of error w/in runs
 # TODO: convergence speed (in terms of # nodes visited)
