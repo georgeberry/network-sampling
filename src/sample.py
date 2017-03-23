@@ -7,6 +7,9 @@ import snowball
 import itertools
 import graph_filter
 import json
+import random
+import numpy as np
+
 
 def population(g):
     link_counts = {
@@ -24,8 +27,56 @@ def population(g):
 
     return link_counts
 
+
+def multiseed(sampler, g, n_seeds=1, seeds=None):
+    """ Instantiates multiple copies of a sampler with different seeds, and samples from them in parallel """
+    if not seeds:
+        seeds = np.random.choice(g.nodes(), n_seeds, replace=False)
+    samples = [sampler(g, seed=seed) for seed in seeds]
+    while True:
+        counts = [next(sample, None) for sample in samples]
+        if None in counts:
+            break
+        node_counts, edge_counts = zip(*counts)
+        yield sum(node_counts), sum(edge_counts)
+
+
+def sample_at(sampler, g, n_edges=None, n_nodes=None, **sampler_kwargs):
+    """
+    Samples the graph using a given method until you have n_edges edges or n_nodes nodes.
+    n_edges: edgecounts for which to get outputs; integer or list of integers (in ascending order)
+    n_nodes: nodecounts for which to get outputs
+    Do not specify both n_edges and n_nodes.
+
+    output: count pair or list of count pairs, one at each edgecount or nodecount benchmark
+    """
+    sample = sampler(g, **sampler_kwargs)
+
+    assert not (n_edges and n_nodes)
+    mode = 'edges'
+    if n_nodes:
+        mode = 'nodes'
+
+    n_things = set(np.ravel(n_edges) + np.ravel(n_nodes))
+
+    counts = {}
+    while n_things:
+        node_counts, edge_counts = next(sample)
+        if mode == 'edges':
+            thingcount = sum(edge_counts.values())
+        elif mode == 'nodes':
+            thingcount = sum(node_counts.values())
+
+        if thingcount in n_things:
+            n_things.remove(thingcount)
+            counts[thingcount] = (node_counts, edge_counts)
+
+    return counts
+
+
 def filter_none(g):
     return g
+
 
 def stringify_parameters(parameters):
     stringified = ""

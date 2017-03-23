@@ -4,8 +4,7 @@ from graph_gen import generate_powerlaw_group_graph
 
 def sample_random_walk(
     g, # Graph to sample from
-    n_seeds,
-    n_steps):
+    seed=None):
 
     sampled_nodes = []
     sampled_edges = []
@@ -29,35 +28,23 @@ def sample_random_walk(
     Right now this is being done with replacement,
     is that okay?
     """
-    g_nodes = g.nodes(data=True)
-    sampling_nodes = random.sample(g.nodes(),n_seeds)
 
+    if not seed:
+        seed = random.sample(g.nodes(), 1)
+    node = seed
 
-    for step in range(n_steps):
-        # We store all sampled nodes just in case
-        sampled_nodes += sampling_nodes
+    while list(g[node]):
+        # Pick an edge to follow
+        next_node = random.choice(list(g[node]))
 
-        new_nodes = []
-        for node in sampling_nodes:
-            if len(list(g[node])) == 0:
-                continue
-            # For each node, pick an edge to follow
-            next_node = random.choice(list(g[node]))
+        # Update the list of link counts for the sampled edge
+        g1, g2 = g_groups[node], g_groups[next_node]
+        link_counts[(g1, g2)] += 1
+        node_counts[g1] += 1 # only add one of the nodes
 
-            # The nodes at the end of these edges are the new batch.
-            new_nodes += [next_node]
-            sampled_edges += [(node,next_node)]
+        node = next_node
 
-            # Update the list of link counts for the sampled edge
-            g1, g2 = g_groups[node], g_groups[next_node]
-            link_counts[(g1, g2)] += 1
-            node_counts[g1] += 1 # only add one of the nodes
-
-        sampling_nodes = new_nodes
-
-    sampled_nodes += sampling_nodes
-
-    return node_counts, link_counts
+        yield node_counts, link_counts
 
 
 if __name__ == "__main__":
