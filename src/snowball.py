@@ -23,7 +23,7 @@ def sample_snowball(
     g_groups = nx.get_node_attributes(g,'group')
 
     if not seed:
-        seed = random.sample(g.nodes(), 1)
+        seed = random.choice(g.nodes())
 
     # algorithm:
     # get neighbors of a focal node
@@ -65,5 +65,7 @@ if __name__ == "__main__":
     import sample
 
     g = gg.generate_powerlaw_group_graph(1000, 2, [0.8, 0.8], .5)
-    counts = sample_snowball(g, 200, 2)
+    counts = sample.sample_at(sample_snowball, g, n_edges=[200,400])
+    print(counts)
+    counts = sample.sample_at(sample.multiseed(sample_snowball, n_seeds=4), g, n_edges=[200, 400])
     print(counts)

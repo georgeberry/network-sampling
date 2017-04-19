@@ -34,6 +34,7 @@ def sample_random_edges(g, seed=None):
         yield node_counts, link_counts
 
 if __name__ == "__main__":
+    import sample
     g = generate_powerlaw_group_graph(1000, 2, [0.8, 0.8], .5)
-    counts = sample_random_edges(g, 200)
+    counts = sample.sample_at(sample_random_edges, g, n_edges=[200, 400])
     print(counts)

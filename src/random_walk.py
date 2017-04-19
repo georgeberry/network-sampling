@@ -30,7 +30,7 @@ def sample_random_walk(
     """
 
     if not seed:
-        seed = random.sample(g.nodes(), 1)
+        seed = random.choice(g.nodes())
     node = seed
 
     while list(g[node]):
@@ -48,6 +48,7 @@ def sample_random_walk(
 
 
 if __name__ == "__main__":
+    import sample
     g = generate_powerlaw_group_graph(1000, 2, [0.8,0.8], .5)
-    counts = sample_random_walk(g, 10, 50)[0]
+    counts = sample.sample_at(sample_random_walk, g, n_edges=[200,400])
     print(counts)
