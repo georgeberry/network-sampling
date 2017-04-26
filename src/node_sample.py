@@ -3,7 +3,7 @@ import numpy as np
 from graph_gen import generate_powerlaw_group_graph
 
 
-def sample_random_nodes(g, n_sample):
+def sample_random_nodes(g, seed=None):
     """
     This function samples nodes and computes the within- and cross-group links
     Note that we assume that we don't see the group at the other end of a link
@@ -24,22 +24,24 @@ def sample_random_nodes(g, n_sample):
         ('b', 'a'): 0,
     }
 
-    node_list = g.nodes()
-    if n_sample >= len(node_list):
-        sampled_nodes = node_list
-    else:
-        sampled_nodes = np.random.choice(node_list, size=n_sample, replace=False)
+    g_groups = nx.get_node_attributes(g, 'group')
 
-    s = g.subgraph(sampled_nodes) # s for subgraph
+    sampled_nodes = set()
+    nodes = list(g.nodes())
+    np.random.shuffle(nodes)
 
-    for n1, n2 in s.edges_iter():
-        link_counts[(s.node[n1]['group'], s.node[n2]['group'])] += 1
-    for n1 in s.nodes_iter():
-        node_counts[s.node[n1]['group']] += 1
+    for node in nodes:
+        for potential_neighbor in sampled_nodes:
+            if g.has_edge(node, potential_neighbor):
+                g1, g2 = g_groups[node], g_groups[potential_neighbor]
+                link_counts[(g1, g2)] += 1
+        node_counts[g_groups[node]] += 1
+        sampled_nodes.add(node)
 
-    return node_counts, link_counts
+        yield node_counts, link_counts
 
-def sample_ego_networks(g, n_sample):
+
+def sample_ego_networks(g, seed=None):
     """
     Sample ego networks, assume that we see the identity of people on the other
         end
@@ -56,25 +58,26 @@ def sample_ego_networks(g, n_sample):
         ('b', 'a'): 0,
     }
 
-    node_list = g.nodes()
-    sampled_nodes = np.random.choice(node_list, size=n_sample, replace=False)
+    nodes = list(g.nodes())
+    np.random.shuffle(nodes)
 
-
-    for ego in sampled_nodes:
+    for ego in nodes:
         s = nx.ego_graph(g, ego)
         ego_group = s.node[ego]['group']
         node_counts[ego_group] += 1
+        yield node_counts, link_counts
         s.remove_node(ego)
         for alter, attr in s.nodes_iter(data=True):
             alter_group = attr['group']
             link_counts[ego_group, alter_group] += 1
             node_counts[alter_group] += 1
 
-    return node_counts, link_counts
+            yield node_counts, link_counts
 
 if __name__ == "__main__":
+    import sample
     g = generate_powerlaw_group_graph(1000, 2, [0.8, 0.8], .5)
-    counts = sample_random_nodes(g, 200)
+    counts = sample.sample_at(sample_random_nodes, g, n_nodes=[100, 200])
     print(counts)
-    counts = sample_ego_networks(g, 20)
+    counts = sample.sample_at(sample_ego_networks, g, n_nodes=[100, 200])
     print(counts)
