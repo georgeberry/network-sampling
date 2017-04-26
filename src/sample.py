@@ -9,6 +9,7 @@ import graph_filter
 import json
 import random
 import numpy as np
+import types
 
 
 def population(g):
@@ -18,17 +19,24 @@ def population(g):
         ('b', 'b'): 0,
         ('b', 'a'): 0,
     }
+    node_counts = dict()
 
     g_groups = nx.get_node_attributes(g,'group')
 
     for edge in g.edges_iter():
         link_counts[(g_groups[edge[0]],
                 g_groups[edge[1]])] += 1
+    for node in g.nodes_iter():
+        group = g_groups[node]
+        if group not in node_counts.keys():
+            node_counts[group] = 0
+        node_counts[g_groups[node]] += 1
 
-    return link_counts
+    print(node_counts)
+    return (node_counts,link_counts)
 
 
-def multiseed(sampler, n_seeds=1, seeds=None):
+def multiseed(sampler, n_seeds=1, seeds=None, samplername=""):
     """
     Returns a generator which instantiates multiple copies of a sampler with different seeds,
     and samples from them in parallel
@@ -56,10 +64,11 @@ def multiseed(sampler, n_seeds=1, seeds=None):
                         else:
                             summed_edge_counts[ekey] = item[1][ekey]
                 yield summed_node_counts, summed_edge_counts
+    multisampler.__name__ = 'multisampler_' + samplername
     return multisampler
 
 
-def sample_at(sampler, g, n_edges=None, n_nodes=None, **sampler_kwargs):
+def sample_at(sampler, g, n_edges=None, n_nodes=None, *sampler_args, **sampler_kwargs):
     """
     Samples the graph using a given method until you have n_edges edges or n_nodes nodes.
     n_edges: edgecounts for which to get outputs; integer or list of integers (in ascending order)
@@ -68,7 +77,7 @@ def sample_at(sampler, g, n_edges=None, n_nodes=None, **sampler_kwargs):
 
     output: count pair or list of count pairs, one at each edgecount or nodecount benchmark
     """
-    sample = sampler(g, **sampler_kwargs)
+    sample = sampler(g, *sampler_args, **sampler_kwargs)
 
     assert not (n_edges and n_nodes)
     mode = 'edges'
@@ -76,6 +85,9 @@ def sample_at(sampler, g, n_edges=None, n_nodes=None, **sampler_kwargs):
     if n_nodes:
         mode = 'nodes'
         n_things = set(np.ravel(n_nodes))
+
+    if not isinstance(sample,types.GeneratorType):
+        return {-1: sample}
 
     counts = {}
     while n_things:
@@ -114,23 +126,41 @@ def stringify_parameters(parameters):
     return stringified
 
 if __name__ == "__main__":
-    homophily_values = [(0.8,0.8),(0.5,0.5),(0.2,0.2)]
-    majority_sizes = [0.8,0.5]
+    # homophily_values = [(0.8,0.8),(0.5,0.5),(0.2,0.2)]
+    # majority_sizes = [0.8,0.5]
+    # mean_deg = [4]
+    # filters = [ (filter_none , ()),
+    # 			(graph_filter.graph_filter , ('b',0,0.2)),
+    # 			(graph_filter.graph_filter , ('a',0,0.2)),
+    # 			(graph_filter.graph_filter , ('a',0.8,1))]
+
+    # sampling_methods = [(node_sample.sample_random_nodes , ()),
+    # 					(node_sample.sample_ego_networks , ()),
+    # 					(edge_sample.sample_random_edges , ()),
+    # 					(multiseed(random_walk.sample_random_walk, 5) , ()),
+    # 					(multiseed(snowball.sample_snowball,3)),
+    # 					(population , ())]
+    # graph_size = 1000
+    # sample_size = 1000
+    # samples_per_graph = 1000
+    # nodes_to_sample = [200]
+
+    homophily_values = [(0.5,0.5)]
+    majority_sizes = [0.8]
     mean_deg = [4]
     filters = [ (filter_none , ()),
-                (graph_filter.graph_filter , ('b',0,0.2)),
-                (graph_filter.graph_filter , ('a',0,0.2)),
-                (graph_filter.graph_filter , ('a',0.8,1))]
+                (graph_filter.graph_filter , ('b',0,0.2))]
 
-    sampling_methods = [(node_sample.sample_random_nodes , (200,)),
-                        (node_sample.sample_ego_networks , (20,)),
-                        (edge_sample.sample_random_edges , (200,)),
-                        (random_walk.sample_random_walk , (10,20)),
-                        (snowball.sample_snowball , (5,3)),
+    sampling_methods = [(node_sample.sample_random_nodes , ()),
+                        (node_sample.sample_ego_networks , ()),
+                        (edge_sample.sample_random_edges , ()),
+                        (multiseed(random_walk.sample_random_walk, 5, samplername="random_walk") , ()),
+                        (multiseed(snowball.sample_snowball,3, samplername="snowball"), ()),
                         (population , ())]
-    graph_size = 1000
-    sample_size = 1000
-    samples_per_graph = 1000
+    graph_size = 100
+    sample_size = 100
+    samples_per_graph = 100
+    nodes_to_sample = (20,)
 
     for parameters in itertools.product(
         homophily_values,
@@ -142,18 +172,19 @@ if __name__ == "__main__":
         s_params = stringify_parameters(parameters)
 
         g = None
-        counts = {k:list() for k in sampling_methods}
+        counts = {k[0]+(k[1],):list() for k in itertools.product(sampling_methods,nodes_to_sample + (-1,))}
         for i in range(sample_size):
             if i % samples_per_graph == 0:
                 g = generate_powerlaw_group_graph(
                     graph_size, deg, h, s)
                 g = fil[0](g, *fil[1])
             for method, args in sampling_methods:
-                counts[(method,args)] += [{str(k):v
-                    for k,v in method(g, *args).items()}]
+                for sampled,results in sample_at(method,g,nodes_to_sample,*args).items():
+                    counts[(method,args,sampled)] += [{str(k):v
+                        for k,v in results[1].items()}]
         for c_method, sample in counts.items():
-            f = open('data/{}-{}.json'.format(
-                    c_method[0].__name__, s_params), 'w+')
+            f = open('data/{}-{}-{}.json'.format(
+                    c_method[0].__name__, s_params, c_method[2]), 'w+')
             json.dump(sample,f)
             f.close()
 
