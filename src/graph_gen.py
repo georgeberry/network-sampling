@@ -162,7 +162,7 @@ def generate_powerlaw_group_graph(
         ('b', 'a'): 1 - h[1],
     }
 
-    # Get number majority and minority nodes nodes
+    # Get number majority nodes
     n_a = int(f * n)
 
     # See template algorithm here: https://networkx.readthedocs.io/en/stable/

@@ -1,13 +1,18 @@
 import random
-from graph_gen import generate_powerlaw_group_graph
+import networkx as nx
+
 
 def sample_snowball(
-        g, # Graph to sample from
-        n_seeds,
-        n_steps):
+        g,  # Graph to sample from
+        seed=None
+        ):
 
-    sampled_nodes_all = []
-    sampled_edges_all = []
+    # stuff to output
+    node_counts = {
+        'a': 0,
+        'b': 0,
+    }
+
     link_counts = {
         ('a', 'a'): 0,
         ('a', 'b'): 0,
@@ -15,34 +20,52 @@ def sample_snowball(
         ('b', 'a'): 0,
     }
 
-    g_nodes = g.nodes(data=True)
-    seeds = set(random.sample(g.nodes(), n_seeds))
+    g_groups = nx.get_node_attributes(g,'group')
 
-    for seed in seeds:
-        sampled_nodes = set()
-        sampled_edges = set()
-        frontier = set([seed])
+    if not seed:
+        seed = random.choice(g.nodes())
 
-        for _ in range(n_steps):
-            next_frontier = set()
-            sampled_nodes |= frontier
-            for node in frontier:
-                for neighbor in g[node].keys():
-                    if neighbor not in sampled_nodes:
-                        next_frontier.add(neighbor)
-                    elif (node, neighbor) not in sampled_edges and (neighbor, node) not in sampled_edges:
-                        sampled_edges.add((node, neighbor))
-                        link_counts[(g_nodes[node][1]['group'],
-                                     g_nodes[neighbor][1]['group'])] += 1
-            frontier = next_frontier
-        sampled_nodes |= frontier
-        sampled_nodes_all += sampled_nodes
-        sampled_edges_all += sampled_edges
+    # algorithm:
+    # get neighbors of a focal node
+    # add these to frontier nodes
+    # add the edges to frontier edges
+    # record the values of frontier edges
+    # when there are no edges, go to next node
 
-    return link_counts
+    sampled_nodes = set()
+    sampled_edges = set()
+
+    frontier = set([seed])
+    # tally the seed, since we only tally nodes when they're discovered.
+    node_counts[g_groups[seed]] += 1
+
+    while frontier:
+        next_frontier = set()  # the nodes we will discover on this pass
+        # for every newly discovered node
+        for node in frontier:
+            # for every neighbor
+            for neighbor in g[node].keys():
+                # if the node is undiscovered, make it discovered, tally its group and add it to the frontier
+                if neighbor not in sampled_nodes:
+                    sampled_nodes.add(neighbor)
+                    node_counts[g_groups[neighbor]] += 1
+                    next_frontier.add(neighbor)
+                # if the edge is undiscovered, make it discovered, and tally its type
+                if (node, neighbor) not in sampled_edges and (neighbor, node) not in sampled_edges:
+                    sampled_edges.add((node, neighbor))
+                    link_counts[(g_groups[node],
+                                 g_groups[neighbor])] += 1
+                yield node_counts, link_counts
+        # all the nodes we just discovered are now the frontier
+        frontier = next_frontier
 
 
 if __name__ == "__main__":
+    import graph_gen as gg
+    import sample
+
     g = gg.generate_powerlaw_group_graph(1000, 2, [0.8, 0.8], .5)
-    counts = sample_snowball_walk(g, 10, 2)[0]
+    counts = sample.sample_at(sample_snowball, g, n_edges=[200,400])
+    print(counts)
+    counts = sample.sample_at(sample.multiseed(sample_snowball, n_seeds=4), g, n_edges=[200, 400])
     print(counts)
