@@ -4,6 +4,7 @@ import networkx as nx
 import numpy as np
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 import plotly.graph_objs as go
+from population import population
 
 def misclassify(g, p_wrong):
 	bad_g = g.copy()
@@ -15,40 +16,25 @@ def misclassify(g, p_wrong):
 			bad_g.node[node[0]]['group'] = 'a'
 	return bad_g
 
-def analyze(ggz, gh1, gh2):
-	mat = np.genfromtxt('../data/misclassify-' + '-'.join([str(x) for x in [ggz,gh1,gh2]]) + '.csv')
+def analyze(big_group, homophily1, homophily2):
+	mat = np.genfromtxt('../data/misclassify-' + '-'.join([str(x) for x in [big_group,homophily1,homophily2]]) + '.csv')
+	print("True Homophily - True Inbreeding - Average Misclassified Homophily - Average Misclassified Inbreeding - "
+		+ "Average Delta Homophily from Misclassification - Average Delta Inbreeding - "
+		+ "Variance in Misclassified Homophily - Variance in Misclassified Inbreeding")
 	print(np.mean(mat,axis=0))
 
-
-if __name__ == "__main__":
-	# g = graph_gen.generate_powerlaw_group_graph(1000, 2, (.5, .5), 0.5)
-	# bad_g = misclassify(g,.5)
-	from population import population
-	# print(g.nodes(data=True))
-	# print(bad_g.nodes(data=True))
-
-	# node_totals, edge_totals = population(g)
-	# print(edge_totals)
-	# homophily_a = edge_totals[('a','a')]/(edge_totals[('a','a')]+edge_totals[('a','b')])
-	# pop_frac_a = node_totals['a']/(node_totals['a']+node_totals['b'])
-	# inbreeding_homophily_a = (homophily_a - pop_frac_a)/(1 - pop_frac_a)
-	# print(homophily_a)
-	# print(inbreeding_homophily_a)
-
-	csv_lines = list()
-
+def simulation_run(big_group = .5, homophily = (0.5,0.5), plot_fig = False):
 	P_MISCLASSIFY = 0.1
 	N_GRAPHS = 100
 	N_MISSES = 1000
 	GRAPH_SIZE = 100
 	GRAPH_MEANDEG = 2
-	GRAPH_HOM = (0.2,0.2)
-	GRAPH_GROUP_SIZE = .5
+	GRAPH_HOM = homophily
+	GRAPH_GROUP_SIZE = big_group
 
 	#print(population(g))
 	with open('../data/misclassify-' + '-'.join([str(x) for x in [GRAPH_GROUP_SIZE,GRAPH_HOM[0],GRAPH_HOM[1]]]) + '.csv', 'a+') as output:
 		for i_graph in range(N_GRAPHS):
-			print('Graph: ' + str(i_graph))
 			g = graph_gen.generate_powerlaw_group_graph(GRAPH_SIZE, GRAPH_MEANDEG, GRAPH_HOM, GRAPH_GROUP_SIZE)
 
 			true_node_totals, true_edge_totals = population(g)
@@ -80,10 +66,9 @@ if __name__ == "__main__":
 				delta_miss_hom, delta_miss_inbreeding_hom, var_miss_hom, var_miss_inbreeding_hom,
 				1 if np.abs(true_hom_a) > np.abs(avg_miss_hom) else 0,
 				1 if np.abs(true_inbreeding_hom_a) > np.abs(avg_miss_inbreeding_hom) else 0]
-			csv_lines.append(out)
 			output.write(' '.join([str(x) for x in out]) + '\n')
 
-			if i_graph == 0:
+			if plot_fig and i_graph == 0:
 				layout = {'shapes':[
 				{
 					'type': 'line',
@@ -101,29 +86,8 @@ if __name__ == "__main__":
 				plot(fig, filename='../plots/no_homophily.html')
 				print("Done plot.")
 
-
-	# print("Starting analysis.")
-	# total_less_interesting = 0
-	# total_inbreeding_less_interesting = 0
-	# total_delta = 0
-	# total_inbreeding_delta = 0
-	# total_hom = 0
-	# total_inbreeding_hom = 0
-	# for line in csv_lines:
-	# 	if np.abs(line[0]) > np.abs(line[2]):
-	# 		total_less_interesting += 1
-	# 	if np.abs(line[1]) > np.abs(line[3]):
-	# 		total_inbreeding_less_interesting += 1
-	# 	total_delta += line[4]
-	# 	total_inbreeding_delta += line[5]
-	# 	total_hom += line[0]
-	# 	total_inbreeding_hom += line[1]
-
-	# avg_delta = total_delta / N_GRAPHS
-	# avg_inbreeding_delta = total_inbreeding_delta / N_GRAPHS
-	# avg_hom = total_hom / N_GRAPHS
-	# avg_inbreeding_hom = total_inbreeding_hom / N_GRAPHS
-
-	# print("Real homophily: " + str(avg_hom) + "/" + str(avg_inbreeding_hom))
-	# print("Total less interesting: " + str(total_less_interesting) + '/' + str(total_inbreeding_less_interesting))
-	# print("Overall average delta: " + str(avg_delta) + '/' + str(avg_inbreeding_delta))
+if __name__ == "__main__":
+	simulation_run()
+	simulation_run(big_group = 0.8)
+	simulation_run(homophily = (0.8,0.8))
+	simulation_run(homophily = (0.2,0.2))
