@@ -1,4 +1,3 @@
-import graph_gen
 import random
 import networkx as nx
 import numpy as np
@@ -6,8 +5,10 @@ import pandas as pd
 #from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 #import plotly.graph_objs as go
 from plotnine import *
+from itertools import product
 
 from population import population
+import graph_gen
 
 def misclassify(g, p_wrong):
 	bad_g = g.copy()
@@ -51,22 +52,22 @@ def get_metrics(node_totals, edge_totals):
 	}
 	return result
 
-P_MISCLASSIFY = 0.1
-N_GRAPHS = 1
-N_MISSES = 10
+P_MISCLASSIFY = [0.00, 0.03, 0.06, 0.09, 0.12, 0.15, 0.18, 0.21]
+N_GRAPHS = 10
+N_MISSES = 100
 GRAPH_SIZE = 100
 GRAPH_MEANDEG = 2
-GRAPH_HOM = (0.2,0.2)
+GRAPH_HOM = (0.8,0.8)
 GRAPH_GROUP_SIZE = .5
-OUTFILE_NAME = ''
+OUTFILE_NAME = '/Users/g/Desktop/output.tsv'
 
 if __name__ == "__main__":
 
 	metrics_list = []
 
 	#print(population(g))
-	for i_graph in range(N_GRAPHS):
-		print('Graph: ' + str(i_graph))
+	for i_graph, p_misclassify in product(range(N_GRAPHS), P_MISCLASSIFY):
+		print('Computing graph: {}'.format(i_graph))
 		g = graph_gen.generate_powerlaw_group_graph(
 			GRAPH_SIZE,
 			GRAPH_MEANDEG,
@@ -79,20 +80,21 @@ if __name__ == "__main__":
 			true_node_totals,
 			true_edge_totals,
 		)
-		true_results = {x + ' true': y for x, y in true_results.items()}
-		true_results['graph_idx': i_graph]
+		true_results = {'true_' + x: y for x, y in true_results.items()}
+		true_results['graph_idx'] = i_graph
 
 		# bootstrap misses
 		for i_miss in range(N_MISSES):
-			bad_g = misclassify(g, P_MISCLASSIFY)
+			bad_g = misclassify(g, p_misclassify)
 			node_totals, edge_totals = population(bad_g)
 			miss_results = get_metrics(
 				node_totals,
 				edge_totals,
-				key='rep {}'.format(i_miss),
 			)
-			true_results['sim_idx': i_miss]
+			true_results['sim_idx'] = i_miss
+			true_results['p_misclassify'] = p_misclassify
 			miss_results.update(true_results)
 			metrics_list.append(miss_results)
 
-print(pd.DataFrame(metrics_list))
+df = pd.DataFrame(metrics_list)
+df.to_csv(OUTFILE_NAME, sep='\t')
