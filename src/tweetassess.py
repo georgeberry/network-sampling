@@ -3,6 +3,14 @@ from pymongo import MongoClient
 def homophily_group_parity(node):
 	return (node['twitter_id'] % 2)
 
+def gender_from_database(node):
+	if node["percent_male"] >= .5:
+		return 1
+	elif node["percent_male"] >= 0:
+		return 0
+	else:
+		return -1
+
 class EdgeCounter(object):
 	def __init__(self, first_node, h, func, coll):
 		self.node = first_node
@@ -49,7 +57,10 @@ def process_edge(node, next_node, h, func, coll, depth):
 		print('Depth: ' + str(depth))
 		print(node['twitter_id'])
 		return
-	h[(func(node),func(next_node))] += 1
+	group1 = func(node)
+	group2 = func(next_node)
+	if group1 != -1 and group2 != -1:
+		h[(group1,group2)] += 1
 	for next_again_id in next_node['next']:
 		next_again = coll.find_one({'twitter_id':next_again_id, 'run':next_node['run']})
 		if next_again is not None:

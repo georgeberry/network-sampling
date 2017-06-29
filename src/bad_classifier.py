@@ -86,6 +86,47 @@ def simulation_run(big_group = .5, homophily = (0.5,0.5), plot_fig = False):
 				plot(fig, filename='../plots/no_homophily.html')
 				print("Done plot.")
 
+def simulation_spread(big_group = .5, p_wrong = 0.1):
+	P_MISCLASSIFY = p_wrong
+	N_GRAPHS = 5
+	N_MISSES = 10
+	GRAPH_SIZE = 100
+	GRAPH_MEANDEG = 2
+	GRAPH_GROUP_SIZE = big_group
+
+	miss_ingroup_fracs = list()
+	miss_ingroup_x = list()
+	with open('../data/spread-vs-expected-' + '-'.join([str(x) for x in [GRAPH_GROUP_SIZE,P_MISCLASSIFY]]) + '.csv', 'a+') as output:
+
+		for hom_param in np.arange(0, 1, 0.01):
+			print(hom_param)
+			GRAPH_HOM = (hom_param, hom_param)
+
+			for i_graph in range(N_GRAPHS):
+				g = graph_gen.generate_powerlaw_group_graph(GRAPH_SIZE, GRAPH_MEANDEG, GRAPH_HOM, GRAPH_GROUP_SIZE)
+
+				true_node_totals, true_edge_totals = population(g)
+				true_hom_a = true_edge_totals[('a','a')]/(true_edge_totals[('a','a')]+true_edge_totals[('a','b')])
+
+				for i_miss in range(N_MISSES):
+					bad_g = misclassify(g, P_MISCLASSIFY)
+
+					node_totals, edge_totals = population(bad_g)
+
+					hhom = edge_totals[('a','a')]/(edge_totals[('a','a')]+edge_totals[('a','b')])
+					miss_ingroup_fracs.append(hhom - true_hom_a)
+					miss_ingroup_x.append(true_hom_a)
+					output.write(str(miss_ingroup_x[-1]) + ' ' + str(miss_ingroup_fracs[-1]) + '\n')
+
+	trace = go.Scatter(
+		x = miss_ingroup_x,
+		y = miss_ingroup_fracs,
+		mode = 'markers'
+		)
+	data = [trace]
+	plot(data, filename="../plots/spread_vs_expected-" + '-'.join([str(x) for x in [GRAPH_GROUP_SIZE,P_MISCLASSIFY]]))
+
+
 def simulation_by_homophily(big_group = .5, p_wrong = 0.1):
 	P_MISCLASSIFY = p_wrong
 	N_GRAPHS = 5
@@ -166,7 +207,4 @@ def simulation_by_homophily(big_group = .5, p_wrong = 0.1):
 
 
 if __name__ == "__main__":
-	simulation_run()
-	simulation_run(big_group = 0.8)
-	simulation_run(homophily = (0.8,0.8))
-	simulation_run(homophily = (0.2,0.2))
+	simulation_spread(big_group = 0.2)
