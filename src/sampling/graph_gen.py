@@ -38,7 +38,7 @@ import random
 from collections import Counter
 import numpy as np
 import networkx as nx
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 def _random_subset(seq, m):
     """
@@ -194,7 +194,7 @@ def generate_powerlaw_group_graph(
         source += 1
     return G
 
-
+'''
 def group_log_log_plots(g):
     """
     Pass this a graph, generates log log plots for groups separately
@@ -249,3 +249,4 @@ if __name__ == '__main__':
     # seems like there's an error on this one
     g = generate_powerlaw_group_graph(10000, 2, [0.0, 0.0], .8)
     group_log_log_plots(g)
+'''
