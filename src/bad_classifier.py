@@ -54,13 +54,13 @@ def get_metrics(node_totals, edge_totals):
 	return result
 
 P_MISCLASSIFY = [0.00, 0.03, 0.06, 0.09, 0.12, 0.15, 0.18, 0.21]
-N_GRAPHS = 10
+N_GRAPHS = 100
 N_MISSES = 100
 GRAPH_SIZE = 100
 GRAPH_MEANDEG = 2
 GRAPH_HOM = (0.8,0.8)
 GRAPH_GROUP_SIZE = .5
-OUTFILE_NAME = '/Users/g/Desktop/output.tsv'
+OUTFILE_NAME = '../sim_output/output.tsv'
 
 if __name__ == "__main__":
 
