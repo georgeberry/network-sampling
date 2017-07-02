@@ -1,5 +1,9 @@
 import networkx as nx
+
 def population(g):
+    """
+    Gives node and edge counts by group
+    """
     node_counts = {
         'a': 0,
         'b': 0,

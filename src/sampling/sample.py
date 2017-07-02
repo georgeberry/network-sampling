@@ -68,7 +68,14 @@ def multiseed(sampler, n_seeds=1, seeds=None, samplername=""):
     return multisampler
 
 
-def sample_at(sampler, g, n_edges=None, n_nodes=None, *sampler_args, **sampler_kwargs):
+def sample_at(
+    sampler,
+    g,
+    n_edges=None,
+    n_nodes=None,
+    *sampler_args,
+    **sampler_kwargs
+):
     """
     Samples the graph using a given method until you have n_edges edges or n_nodes nodes.
     n_edges: edgecounts for which to get outputs; integer or list of integers (in ascending order)
