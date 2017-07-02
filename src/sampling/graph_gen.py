@@ -115,7 +115,8 @@ def generate_powerlaw_group_graph(
         n, # number of nodes
         m, # mean degree
         h, # two-vector of homophily
-        f): # probability of majority group
+        f, # probability of majority group
+):
     """
     Logic:
 
@@ -192,7 +193,6 @@ def generate_powerlaw_group_graph(
         # Increment
         source += 1
     return G
-
 
 
 def group_log_log_plots(g):

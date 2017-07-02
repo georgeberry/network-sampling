@@ -17,7 +17,7 @@ import networkx as nx
 import numpy as np
 from graph_gen import generate_powerlaw_group_graph
 
-def sample_random_edges(g):
+def sample_edges(g):
     """
     Randomly sample edges
     Yield after each edge is added
@@ -43,7 +43,7 @@ def sample_random_edges(g):
         yield node_counts, link_counts
 
 
-def sample_random_nodes(g):
+def sample_nodes(g):
     """
     Sample random nodes, only add edges if we get both ends
 
@@ -67,10 +67,11 @@ def sample_random_nodes(g):
         node_counts[g1] += 1
         for potential_neighbor in sampled_nodes:
             if g.has_edge(node, potential_neighbor):
-                g2 = g.node[poten['group']tial_neighbor]
+                g2 = g.node[potential_neighbor]['group']
                 link_counts[(g1, g2)] += 1
         sampled_nodes.add(node)
         yield node_counts, link_counts
+
 
 def sample_ego_networks(g):
     """
@@ -101,6 +102,7 @@ def sample_ego_networks(g):
             node_counts[alter_group] += 1
             yield node_counts, link_counts
 
+
 def sample_random_walk(g):
     """
     Random walk from a single random seed
@@ -129,6 +131,7 @@ def sample_random_walk(g):
         node_counts[g1] += 1 # add only seed to avoid double counting
         source = destination
         yield node_counts, link_counts
+
 
 def sample_snowball(g, directed=False):
     """
@@ -191,3 +194,40 @@ def sample_snowball(g, directed=False):
                 yield node_counts, link_counts
         # all the nodes we just discovered are now the frontier
         frontier = next_frontier
+
+def population(g):
+    """
+    True values of node and edge counts for a graph
+    """
+    node_counts = {
+        'a': 0,
+        'b': 0,
+    }
+    link_counts = {
+        ('a', 'a'): 0,
+        ('a', 'b'): 0,
+        ('b', 'b'): 0,
+        ('b', 'a'): 0,
+    }
+    for n1, n2 in g.edges_iter():
+        link_counts[(g.node[n1]['group'], g.node[n2]['group'])] += 1
+    for idx, attr in g.nodes_iter(data=True):
+        node_counts[attr['group']] += 1
+    while True:
+        yield node_counts, link_counts
+
+# mostly for testing
+if __name__ == '__main__':
+    g = generate_powerlaw_group_graph(1000, 4, (0.5, 0.5), 0.5)
+    sampling_methods = [
+        sample_edges(g),
+        sample_nodes(g),
+        sample_ego_networks(g),
+        sample_random_walk(g),
+        sample_snowball(g, directed=False),
+        sample_snowball(g, directed=True),
+        population(g),
+    ]
+    for _ in range(100):
+        for method in sampling_methods:
+            print(next(method))

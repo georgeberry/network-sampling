@@ -1,5 +1,7 @@
-from graph_gen import generate_powerlaw_group_graph
 import networkx as nx
+
+# our imorts
+from graph_gen import generate_powerlaw_group_graph
 import node_sample
 import edge_sample
 import random_walk
@@ -10,30 +12,6 @@ import json
 import random
 import numpy as np
 import types
-
-
-def population(g):
-    link_counts = {
-        ('a', 'a'): 0,
-        ('a', 'b'): 0,
-        ('b', 'b'): 0,
-        ('b', 'a'): 0,
-    }
-    node_counts = dict()
-
-    g_groups = nx.get_node_attributes(g,'group')
-
-    for edge in g.edges_iter():
-        link_counts[(g_groups[edge[0]],
-                g_groups[edge[1]])] += 1
-    for node in g.nodes_iter():
-        group = g_groups[node]
-        if group not in node_counts.keys():
-            node_counts[group] = 0
-        node_counts[g_groups[node]] += 1
-
-    print(node_counts)
-    return (node_counts,link_counts)
 
 
 def multiseed(sampler, n_seeds=1, seeds=None, samplername=""):
