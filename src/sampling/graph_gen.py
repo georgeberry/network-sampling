@@ -38,7 +38,7 @@ import random
 from collections import Counter
 import numpy as np
 import networkx as nx
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 def _random_subset(seq, m):
     """
@@ -115,7 +115,8 @@ def generate_powerlaw_group_graph(
         n, # number of nodes
         m, # mean degree
         h, # two-vector of homophily
-        f): # probability of majority group
+        f, # probability of majority group
+):
     """
     Logic:
 
@@ -195,6 +196,97 @@ def generate_powerlaw_group_graph(
 
 
 
+def generate_powerlaw_group_digraph(
+        n, # number of nodes
+        m, # mean degree
+        h, # two-vector of homophily
+        f, # probability of majority group
+):
+    """
+    Logic:
+
+    Store two lists of repeated_nodes, one for each group
+    The tricky part is that they need to be weighed by the h_a and h_b numbers
+    Assume that h_a = .7, then all a-nodes must be weighted by .7 / .3 while
+        all b-nodes must be weighted by .3 / .7
+    Seems like simplest way to do this would be to add any a-node to r_a
+        7 times while adding a b-node to r_a 3 times
+    Can simply give people a warning that we're multiplying by 10
+    10x memory hit during graph creation isn't the end of the world
+
+    Algo:
+
+    1. Initialize empty graph
+    2. Add m nodes in each group
+    3. Create node with a random group and attach its links at random to the m
+        seed nodes
+    4. Add all nodes to the repeated_nodes_a and repeated_nodes_b lists
+    5. Then, while the number of nodes less than n
+        5a. Create a new node
+        5b. Give it a random group
+        5c. Choose m targets from the repeated_nodes_a or repeated_nodes_b lists
+            based on group
+        5d. Add edges from source to targets
+        5e. Depending on groups of target nodes, add to repeated_nodes_a or
+            repeated_nodes_b
+        5f. Add source node to repeated_nodes_a and repeated_nodes_b
+        5g. Increment source
+
+
+    TODO:
+    - clean up assertions
+    - reduce number of parameters?
+    - clean up while loop (explicit init?)
+
+
+    """
+    # Unpack homophily values
+    h_prob = {
+        ('a', 'a'): h[0],
+        ('a', 'b'): 1 - h[0],
+        ('b', 'b'): h[1],
+        ('b', 'a'): 1 - h[1],
+    }
+
+    # Get number majority nodes
+    n_a = int(f * n)
+
+    # See template algorithm here: https://networkx.readthedocs.io/en/stable/
+    # _modules/networkx/generators/random_graphs.html#barabasi_albert_graph
+    G = nx.DiGraph()
+
+    # We're going to create all the nodes first, then do link generation
+    # Note that we shuffle the indicies
+    G.add_nodes_from(
+        [(idx, {'group': grp}) for idx, grp in enumerate(_gen_groups(n, n_a))]
+    )
+    G.name = "powerlaw_group_graph({},{})".format(n,m)
+
+    # Seed nodes, we will weight by probability below
+    source = m
+    target_list = list(range(m))
+
+    # add outlinks from each of the first m nodes to each other
+    seed_set = set(list(range(m)))
+    for seed_node_idx in seed_set:
+        seed_alter_set = seed_set - {seed_node_idx}
+        for seed_alter_idx in seed_alter_set:
+            G.add_edge(seed_node_idx, seed_alter_idx)
+
+    while source < n:
+        targets = _pick_targets(G, h_prob, target_list, source, m)
+
+        if len(targets) > 0:
+            G.add_edges_from(zip([source]*m, targets))
+
+        # Admit source to be linked to
+        target_list.append(source)
+
+        # Increment
+        source += 1
+    return G
+
+'''
 def group_log_log_plots(g):
     """
     Pass this a graph, generates log log plots for groups separately
@@ -249,3 +341,4 @@ if __name__ == '__main__':
     # seems like there's an error on this one
     g = generate_powerlaw_group_graph(10000, 2, [0.0, 0.0], .8)
     group_log_log_plots(g)
+'''

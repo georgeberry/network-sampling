@@ -83,7 +83,7 @@ def process_user(user, prev, tosave, run, parent_pos = -1, depth = 0, maxdepth =
 			print(user.id)
 			print(prev.id)
 			tosave[parent_pos]['next'].remove(user.id)
-			
+
 		print(e)
 	parent_pos = len(tosave)
 
