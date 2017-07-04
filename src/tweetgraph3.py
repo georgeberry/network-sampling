@@ -40,19 +40,56 @@ class UserFinder(object):
 				self.subcursor = 0
 
 def get_next_user(user):
-	if user.followers_count == 0 or user.friends_count == 0:
+	total_links = user.followers_count + user.friends_count
+	if total_links == 0:
 		return None
 
-	followers = get_followers(user)
-	friends = get_friends(user)
+	if total_links == 1:
+		print("Oh god.")
 
-	options = list(set(friends) & set(followers))
+	if total_links > 1000:
+		print("Entering a big one:" + str(total_links))
 
-	print("Options: " + str(len(options)))
-	if len(options) > 0:
-		return random.choice(options)
+	selection = random.randint(0, total_links - 1)
+
+	if selection < user.friends_count:
+		#We've selected a friend.
+		friends = get_friends(user, selection < 200, selection)
+		if len(friends) != user.friends_count:
+			print("Warning: friend mismatch.")
+		if selection < 200:
+			try:
+				#The friends array already has user objects in it.
+				ret = friends[selection]
+				return ret
+			except IndexError as e:
+				return None
+		else:
+			try:
+				#The friends array doesn't have user objects in it.
+				ret = get_user(friends[selection])
+				return ret
+			except IndexError as e:
+				return None
 	else:
-		return None
+		followers = get_followers(user, (selection-user.friends_count) < 200, selection-user.friends_count)
+		if len(followers) != user.followers_count:
+			print("Warning: follower mismatch")
+		if (selection-user.friends_count) < 200:
+			try:
+				ret = followers[selection]
+				return ret
+			except IndexError as e:
+				return None
+		else:
+			try:
+				ret = get_user(followers[selection])
+				return ret
+			except IndexError as e:
+				return None
+
+def get_user(user_id):
+	return api.GetUser(user_id = user_id)
 
 def save_user(user, timeline, nextu, prev, run):
 	d = dict()
@@ -65,20 +102,25 @@ def save_user(user, timeline, nextu, prev, run):
 	d['run'] = run
 	return d
 
-def get_friends(user):
+def get_friends(user, include_users, to_count):
 	cursor = -1
 	friends = list()
-	while cursor != 0:
-		cursor, prev_cursor, users = api.GetFriendsPaged(user_id=user.id, cursor=cursor, skip_status=True)
-		print(cursor)
+	while cursor != 0 and len(friends) <= to_count:
+		if include_users:
+			cursor, prev_cursor, users = api.GetFriendsPaged(user_id=user.id, cursor=cursor, skip_status=True)
+		else:
+			cursor, prev_cursor, users = api.GetFriendIDsPaged(user_id=user.id, cursor=cursor)
 		friends.extend(users)
 	return friends
 
-def get_followers(user):
+def get_followers(user, include_users, to_count):
 	cursor = -1
 	followers = list()
-	while cursor != 0:
-		cursor, prev_cursor, users = api.GetFollowersPaged(user_id=user.id, cursor=cursor, skip_status=True)
+	while cursor != 0 and len(followers) <= to_count:
+		if include_users:
+			cursor, prev_cursor, users = api.GetFollowersPaged(user_id=user.id, cursor=cursor, skip_status=True)
+		else:
+			cursor, prev_cursor, users = api.GetFollowerIDsPaged(user_id = user.id, cursor=cursor)
 		followers.extend(users)
 	return followers
 
