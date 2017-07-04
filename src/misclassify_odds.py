@@ -7,8 +7,8 @@ import pandas as pd
 from plotnine import *
 from itertools import product
 
-from population import population
-import graph_gen
+from sampling.lazy_population import population
+import sampling.graph_gen as graph_gen
 
 def misclassify(g, p_wrong):
 	bad_g = g.copy()
@@ -38,8 +38,17 @@ def get_metrics(node_totals, edge_totals):
 	p_a = node_totals['a']/N
 	p_b = node_totals['b']/N
 
-	homophily_a = (d_aa / (d_aa + d_ab) - p_a)/(1 - p_a)
-	homophily_b = (d_bb / (d_bb + d_bb) - p_b)/(1 - p_b)
+	try:
+		homophily_a = (d_aa / (d_aa + d_ab) - p_a)/(1 - p_a)
+		homophily_b = (d_bb / (d_bb + d_ba) - p_b)/(1 - p_b)
+	except ZeroDivisionError as e:
+		print(d_aa)
+		print(d_ab)
+		print(d_ba)
+		print(d_bb)
+		print(p_b)
+		print(p_a)
+		raise e
 
 	result = {
 		'd_aa': d_aa,
@@ -69,7 +78,7 @@ if __name__ == "__main__":
 	#print(population(g))
 	for i_graph, p_misclassify in product(range(N_GRAPHS), P_MISCLASSIFY):
 		print('Computing graph: {}'.format(i_graph))
-		g = graph_gen.generate_powerlaw_group_graph(
+		g = graph_gen.generate_powerlaw_group_digraph(
 			GRAPH_SIZE,
 			GRAPH_MEANDEG,
 			GRAPH_HOM,

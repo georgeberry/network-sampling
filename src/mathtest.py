@@ -1,32 +1,43 @@
 import numpy as np
 import pandas as pd
 
-def convert_edge_matrix(p):
-	q = 1-p
+def convert_edge_matrix(p_a,p_b):
+	q_a = 1-p_a
+	q_b = 1-p_b
 	convert = np.matrix([
-		[q**2, p*q, p*q, p**2],
-		[p*q, q**2, p**2, p*q],
-		[p*q, p**2, q**2, p*q],
-		[p**2, p*q, p*q, q**2]])
+		[q_a**2, p_b*q_a, p_b*q_a, p_b**2],
+		[p_a*q_a, q_a*q_b, p_a*p_b, p_b*q_b],
+		[p_a*q_a, p_a*p_b, q_a*q_b, p_b*q_b],
+		[p_a**2, p_a*q_b, p_a*q_b, q_b**2]])
 	return convert.I
 
-def convert_node_percent_matrix(p):
-	q = 1-p
+def convert_node_percent_matrix(p_a,p_b):
 	convert = np.matrix([
-		[1-p, p],
-		[p, 1-p]
+		[1-p_a, p_b],
+		[p_a, 1-p_b]
 		])
 	return convert.I
 
 if __name__ == "__main__":
-	mat = np.genfromtxt("../sim_output/randoutput.tsv", skip_header = 1)
+	'''
+	This code takes the output of a bunch of simulation runs of misclassify_params
+	and does some math on it. Each simulation run gets its own line in the output
+	file with the true, post-misclassification, and predicted a-a links and a
+	node proportions. The predicted links and nodes are generated with some
+	pretty straightforward math, and they're functions of the post-misclassification
+	links and nodes respectively.
+	'''
+	INFILE = "../sim_output/randoutput.tsv"
+	OUTFILE = "../sim_output/computed.tsv"
 
-	tot_error = np.matrix([0,0,0,0])
+	mat = np.genfromtxt(INFILE, skip_header = 1)
+
 	out = list()
 	for i in range(mat.shape[0]):
-		p = mat[i, 10]
-		conv_edge = convert_edge_matrix(p)
-		conv_odds = convert_node_percent_matrix(p)
+		p_a = mat[i, 10]
+		p_b = mat[i, 10] # Right now p_a == p_b.
+		conv_edge = convert_edge_matrix(p_a,p_b)
+		conv_odds = convert_node_percent_matrix(p_a,p_b)
 
 		true_edges = mat[i,12:16]
 		false_edges = mat[i,1:5]
@@ -35,19 +46,17 @@ if __name__ == "__main__":
 
 		predict_links = conv_edge.dot(false_edges)
 		predict_odds = conv_odds.dot(false_node_odds)
-
-		# predict_links = conv_edge.dot(true_edges)
 		
 		predict_hom = predict_links[0,0]/(predict_links[0,0]+predict_links[0,1])
 		predict_inbreed = (predict_hom - predict_odds[0,0])/(1 - predict_odds[0,0])
 
-		# tot_error = tot_error + (predict - false_edges)
-
+		# List of output columnns and values.
 		result = {
 			"true_hom": mat[i,16],
 			"false_hom": mat[i,6],
 			"predict_hom": predict_inbreed,
-			"p_wrong": p,
+			"p_a": p_a,
+			"p_b": p_b,
 			"true_d_aa": true_edges[0],
 			"false_d_aa": false_edges[0],
 			"predict_d_aa": predict_links[0,0],
@@ -59,6 +68,4 @@ if __name__ == "__main__":
 		out.append(result)
 
 	df = pd.DataFrame(out)
-	df.to_csv("../sim_output/computed.tsv",sep='\t')
-
-	print(np.divide(tot_error,mat.shape[0]))
+	df.to_csv(OUTFILE,sep='\t')

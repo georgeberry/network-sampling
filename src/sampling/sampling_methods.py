@@ -15,7 +15,7 @@ The sampling methods we consider are:
 import random
 import networkx as nx
 import numpy as np
-from graph_gen import generate_powerlaw_group_graph
+from sampling.graph_gen import generate_powerlaw_group_graph
 
 def sample_edges(g):
     """

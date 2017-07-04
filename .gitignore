@@ -92,3 +92,7 @@ ENV/
 
 #Simulation data
 src/data/
+sim_output/
+plots/
+data/
+training_data/
