@@ -105,8 +105,7 @@ def grab_graph(login = False, max_grab = 10000):
 		pwd = input("Password: ")
 		client = MongoClient('mongodb://' + uname + ':' + pwd + '@127.0.0.1')
 	#client = MongoClient('mongodb://' + login + '@127.0.0.1')
-	restore_settings = client['fake_news']['TW_sample_stats'].find_one({'cursor':{'$exists':True}})
-	finder = UserFinder(cursor = int(restore_settings['cursor']), subcursor = int(restore_settings['subcursor']))
+	finder = UserFinder()
 
 	i = 0
 	try:
