@@ -1,5 +1,7 @@
 import twitter
 import random
+from time import strptime, mktime
+from datetime import datetime
 from pymongo import MongoClient
 from collections import deque
 
@@ -13,11 +15,17 @@ api = twitter.Api(consumer_key = 'biSMSPUJdGmWkfZTA7SzTjfov',
 twitter.User.__hash__ = lambda self: self.id
 twitter.User.__eq__ = lambda self, other: self.id == other.id
 
+''' Get the first 100 statuses of a twitter User object.
+Used for logging people's timelines. '''
 def get_statuses(user):
 	return api.GetUserTimeline(user_id = user.id,
-			include_rts = False,
-			trim_user = True,
+			include_rts = True,
+			trim_user = False,
 			count = 100)
+
+''' Converts twitter's obnoxious timestamp format to UNIX time '''
+def timestamp_after(timestamp,compare_to):
+	return (mktime(strptime(timestamp,"%a %b %d %H:%M:%S %z %Y")) > compare_to)
 
 class UserFinder(object):
 	def __init__(self, cursor = -1, subcursor = 0):
@@ -39,54 +47,47 @@ class UserFinder(object):
 						include_user_entities = False)
 				self.subcursor = 0
 
-def get_next_user(user):
+''' Finds a new valid user to jump to from the given user.'''
+def get_next_user_follow(user):
 	total_links = user.followers_count + user.friends_count
 	if total_links == 0:
 		return None
 
-	if total_links == 1:
-		print("Oh god.")
-
-	if total_links > 1000:
-		print("Entering a big one:" + str(total_links))
-
-	selection = random.randint(0, total_links - 1)
-
-	if selection < user.friends_count:
-		#We've selected a friend.
-		friends = get_friends(user, selection < 200, selection)
-		if len(friends) != user.friends_count:
-			print("Warning: friend mismatch.")
-		if selection < 200:
-			try:
-				#The friends array already has user objects in it.
-				ret = friends[selection]
-				return ret
-			except IndexError as e:
-				return None
+	''' 
+	We can't just use the reported friends and followers count
+	here because reasonably often twitter misreports it. 
+	Or maybe we could, but when I tried it got complicated.
+	'''
+	friends = get_friends(user, user.friends_count <= 400)
+	followers = get_followers(user, user.followers_count <= 400)
+	no_valid_next = True
+	selected_user = None
+	while no_valid_next:
+		user.friends_count = len(friends)
+		user.followers_count = len(followers)
+		total_links = user.followers_count + user.friends_count
+		if user.friends_count == 0 and user.followers_count == 0:
+			return None
+		selection = random.randint(0, total_links - 1)
+		if selection < user.friends_count:
+			selected_user = friends[selection]
+			''' It's ok to delete these because if we come back to this
+			code, it means they weren't valid to sample anyway. '''
+			del friends[selection]
 		else:
-			try:
-				#The friends array doesn't have user objects in it.
-				ret = get_user(friends[selection])
-				return ret
-			except IndexError as e:
-				return None
-	else:
-		followers = get_followers(user, (selection-user.friends_count) < 200, selection-user.friends_count)
-		if len(followers) != user.followers_count:
-			print("Warning: follower mismatch")
-		if (selection-user.friends_count) < 200:
-			try:
-				ret = followers[selection]
-				return ret
-			except IndexError as e:
-				return None
-		else:
-			try:
-				ret = get_user(followers[selection])
-				return ret
-			except IndexError as e:
-				return None
+			selected_user = followers[selection - user.friends_count]
+			del followers[selection - user.friends_count]
+
+		if type(selected_user) is int or type(selected_user) is str:
+			selected_user = get_user(selected_user)
+
+		if valid_user(selected_user):
+			no_valid_next = False
+
+	return selected_user
+
+def valid_user(user):
+	return user.followers_count < 20000 and user.friends_count < 20000
 
 def get_user(user_id):
 	return api.GetUser(user_id = user_id)
@@ -99,13 +100,20 @@ def save_user(user, timeline, nextu, prev, run):
 	d['next'] = nextu.id if nextu is not None else None
 	d['prev'] = prev.id if prev is not None else None
 	d['tweets'] = [tweet._json for tweet in timeline]
+	d['friends'] = user.friends_count
+	d['followers'] = user.followers_count
 	d['run'] = run
 	return d
 
-def get_friends(user, include_users, to_count):
+'''
+There's two different forms of get_friends. One gets the user objects but 
+returns fewer items per API call. The other only returns user ids. We pick
+the optimal one in terms of calls with the assumption that we'll only make one.
+'''
+def get_friends(user, include_users):
 	cursor = -1
 	friends = list()
-	while cursor != 0 and len(friends) <= to_count:
+	while cursor != 0:
 		if include_users:
 			cursor, prev_cursor, users = api.GetFriendsPaged(user_id=user.id, cursor=cursor, skip_status=True)
 		else:
@@ -113,10 +121,10 @@ def get_friends(user, include_users, to_count):
 		friends.extend(users)
 	return friends
 
-def get_followers(user, include_users, to_count):
+def get_followers(user, include_users):
 	cursor = -1
 	followers = list()
-	while cursor != 0 and len(followers) <= to_count:
+	while cursor != 0:
 		if include_users:
 			cursor, prev_cursor, users = api.GetFollowersPaged(user_id=user.id, cursor=cursor, skip_status=True)
 		else:
@@ -124,13 +132,23 @@ def get_followers(user, include_users, to_count):
 		followers.extend(users)
 	return followers
 
+''' This should probably be refactored but
+given a user, it returns a list containing
+everything needed to save that user's node
+and the next node to jump to. '''
 def process_user(user, prev, run):
 	try:
 		if user is None:
 			return (None, None)
-		timeline = get_statuses(user)
+		if hasattr(user, 'user_timeline'):
+			if len(user.user_timeline > 100):
+				timeline = user.user_timeline[:100]
+			else:
+				timeline = user.user_timeline
+		else:
+			timeline = get_statuses(user)
 
-		nextu = get_next_user(user)
+		nextu = get_next_user_follow(user)
 
 		return ([user,timeline,prev],nextu)
 	except twitter.error.TwitterError as e:
@@ -138,16 +156,13 @@ def process_user(user, prev, run):
 		return (None, None)
 
 def grab_graph(login = False, max_grab = 10000):
-	#fake_news -> network-sampling
-	#twittersample -> TW_sample
-	#twittersamplestats -> TW_sample_stats
 	if not login:
 		client = MongoClient()
 	else:
 		uname = input("Username: ")
 		pwd = input("Password: ")
 		client = MongoClient('mongodb://' + uname + ':' + pwd + '@127.0.0.1')
-	#client = MongoClient('mongodb://' + login + '@127.0.0.1')
+
 	restore_settings = client['fake_news']['TW_sample_stats'].find_one({'cursor':{'$exists':True}})
 	finder = UserFinder(cursor = int(restore_settings['cursor']), subcursor = int(restore_settings['subcursor']))
 
@@ -155,7 +170,6 @@ def grab_graph(login = False, max_grab = 10000):
 		i = 0
 		run = 0
 		for curru in finder():
-			# [User, Timeline, Prev]
 			insert = deque()
 			prevu_a = None
 			while True:
@@ -169,7 +183,7 @@ def grab_graph(login = False, max_grab = 10000):
 						save_dict = save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run)
 						insert.append(save_dict)
 					i += 1
-					print("a")
+					print("Chain End")
 					break
 				elif (curru_a is not None and prevu_a is not None):
 					save_dict = save_user(prevu_a[0],prevu_a[1],curru_a[0],prevu_a[2],run)
@@ -177,13 +191,16 @@ def grab_graph(login = False, max_grab = 10000):
 					i += 1
 					if (i % 100) == 0:
 						print(i)
-					print("b")
+					print("Chain Element")
 				elif (prevu_a is None and curru_a is not None):
-					print("Did a pass.")
+					print("Chain Start")
 					pass
 				else:
-					# If prevu_a is none then that means there was an error accessing
-					# its members, so we can't count it as a valid link.
+					'''
+					If prevu_a is none then that means there was an error accessing
+					its members, so we can't count it as a valid link.
+					Sometimes this happens.
+					'''
 					if len(insert) > 0:
 						if insert[-1]['prev'] is None:
 							print("Error on first.")
@@ -196,7 +213,7 @@ def grab_graph(login = False, max_grab = 10000):
 
 				prevu_a = curru_a
 				curru = nextu
-				# print(insert)
+
 			if len(insert) > 0:
 				client['fake_news']['TW_sample'].insert_many(list(insert),ordered=False)
 			run += 1
