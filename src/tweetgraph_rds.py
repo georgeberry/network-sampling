@@ -27,6 +27,7 @@ def get_statuses(user):
 def timestamp_after(timestamp,compare_to):
 	return (mktime(strptime(timestamp,"%a %b %d %H:%M:%S %z %Y")) > compare_to)
 
+''' Generator to get seeds for RDS. It just goes through followers of twitter. '''
 class UserFinder(object):
 	def __init__(self, cursor = -1, subcursor = 0):
 		self.cursor = cursor
@@ -99,7 +100,7 @@ def save_user(user, timeline, nextu, prev, run):
 	d['screen_name'] = user.screen_name
 	d['next'] = nextu.id if nextu is not None else None
 	d['prev'] = prev.id if prev is not None else None
-	d['tweets'] = [tweet._json for tweet in timeline]
+	d['tweets'] = [tweet._json if hasattr(tweet,'_json') else tweet for tweet in timeline]
 	d['friends'] = user.friends_count
 	d['followers'] = user.followers_count
 	d['run'] = run
@@ -155,30 +156,58 @@ def process_user(user, prev, run):
 		print("Error getting user.")
 		return (None, None)
 
-def grab_graph(login = False, max_grab = 10000):
-	if not login:
-		client = MongoClient()
-	else:
-		uname = input("Username: ")
-		pwd = input("Password: ")
-		client = MongoClient('mongodb://' + uname + ':' + pwd + '@127.0.0.1')
+def reset_restore_settings():
+	uname = input("Username: ")
+	pwd = input("Password: ")
+	client = MongoClient('mongodb://' + uname + ':' + pwd + '@127.0.0.1')
+	client['fake_news']['TW_sample_stats'].update({},
+		{'cursor':-1,'subcursor':0,'insert':None,'prevu_a':None,
+		'curru':None,'i': 0, 'run':0})
+
+def grab_graph(uname, pwd, max_grab = 10000):
+	client = MongoClient('mongodb://' + uname + ':' + pwd + '@127.0.0.1')
 
 	restore_settings = client['fake_news']['TW_sample_stats'].find_one({'cursor':{'$exists':True}})
 	finder = UserFinder(cursor = int(restore_settings['cursor']), subcursor = int(restore_settings['subcursor']))
 
+	start_insert = restore_settings['insert']
+	start_prevu_a = restore_settings['prevu_a']
+	start_curru = restore_settings['curru']
+	i = restore_settings['i']
+	run = restore_settings['run']
 	try:
-		i = 0
-		run = 0
 		for curru in finder():
 			insert = deque()
 			prevu_a = None
 			while True:
+
+				# An ugly way to jump back in to wherever we were before.
+				if start_insert is not None and start_prevu_a is not None and start_curru is not None:
+					prevu_a = reconstruct_user(start_prevu_a)
+					insert = deque(start_insert)
+					curru = reconstruct_user(start_curru)
+				
+				'''
+				All the actual computation takes place in process_user. 
+				This function has two purposes, to convert curru into curru_a and to get nextu.
+
+				nextu represents the next user we're going to look at and is a User object.
+
+				curru is also a User object, and we want to turn it into curru_a, which is a
+				3-tuple (actually a list) containing curru, curru's 100 most recent tweets, and 
+				the previous user in the chain. curru_a combined with nextu is all the information
+				that you need to save one link in the chain.
+				'''
 				curru_a, nextu = process_user(curru, prevu_a[0] if prevu_a is not None else None, run)
 
 				while len(insert) > 2:
 					client['fake_news']['TW_sample'].insert_one(insert.popleft())
 
 				if (curru_a is None and prevu_a is not None) or (i >= max_grab and prevu_a is not None):
+					'''
+					If we don't have a current user but we do have a previous one that
+					means we're at the end of a chain and just catching up logging-wise.
+					'''
 					if len(insert) != 0:
 						save_dict = save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run)
 						insert.append(save_dict)
@@ -186,6 +215,10 @@ def grab_graph(login = False, max_grab = 10000):
 					print("Chain End")
 					break
 				elif (curru_a is not None and prevu_a is not None):
+					'''
+					This is just a normal chain element insert. The arguments here to save_user
+					are user to save, user's last 100 tweets, next user, previous user, run.
+					'''
 					save_dict = save_user(prevu_a[0],prevu_a[1],curru_a[0],prevu_a[2],run)
 					insert.append(save_dict)
 					i += 1
@@ -193,6 +226,13 @@ def grab_graph(login = False, max_grab = 10000):
 						print(i)
 					print("Chain Element")
 				elif (prevu_a is None and curru_a is not None):
+					'''
+					If we don't have a previous user that means we're at the start
+					of a chain. It's more convenient to log one step behind what we
+					scrape since we can correct things if we find out the node
+					we wanted to jump to isn't valid, so at the start of a
+					chain we just do nothing. It'll be logged next pass.
+					'''
 					print("Chain Start")
 					pass
 				else:
@@ -219,16 +259,48 @@ def grab_graph(login = False, max_grab = 10000):
 			run += 1
 			if i >= max_grab:
 				break
-	except Exception as e:
+	except (Exception, KeyboardInterrupt) as e:
 		client['fake_news']['TW_sample_stats'].update({'cursor':{'$exists':True}},
-			{'cursor':finder.cursor,'subcursor':finder.subcursor})
+			{'cursor':finder.cursor,'subcursor':finder.subcursor,
+			'prevu_a':None if prevu_a is None else save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run),
+			'curru':None if curru is None else save_user(curru,[],None,None,-1),
+			'i':i,'run':run,'insert':list(insert)}, upsert=True)
 		client.close()
 		raise e
 
 	client['fake_news']['TW_sample_stats'].update({'cursor':{'$exists':True}},
-			{'cursor':finder.cursor,'subcursor':finder.subcursor})
+			{'cursor':finder.cursor,'subcursor':finder.subcursor,
+			'prevu_a':None if prevu_a is None else save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run),
+			'curru':None if curru is None else save_user(curru,[],None,None,-1),
+			'i':i,'run':run,'insert':list(insert)}, upsert=True)
 	client.close()
 	print("Completed collection.")
 
+def reconstruct_user(output):
+	user = twitter.User(
+			id=output['twitter_id'],
+			name=output['full_name'],
+			screen_name=output['screen_name'],
+			friends_count=output['friends'],
+			followers_count=output['followers']
+		)
+	if output['prev'] is not None:
+		tweets = output['tweets']
+		prev = twitter.User(id=output['prev'])
+		return [user, tweets, prev]
+	else:
+		return user
+
 if __name__ == "__main__":
-	grab_graph(login=True)
+	uname = input("Username: ")
+	pwd = input("Password: ")
+	stop = False
+	while not stop:
+		try:
+			grab_graph(uname=uname, pwd=pwd)
+			stop = True
+		except KeyboardInterrupt:
+			print("Interrupted.")
+			stop = True
+		except ConnectionError:
+			print("Connection error. Restarting.")

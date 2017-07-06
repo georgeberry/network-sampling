@@ -1,3 +1,17 @@
+'''
+Contains utility methods for categorizing a sample of the
+twitter graph by gender.
+
+To do this, we use the Baby Names from Social Security Card
+Applications-National Level Data dataset from from the US
+Social Security Administration. The dataset can be found at
+https://catalog.data.gov/dataset/baby-names-from-social-security-card-applications-national-level-data
+
+The actual metric computed is the percentage of instances of a
+name beteen 1967 and 2017 for which the name was registered
+as belonging to a male. This way, we have a measure of confidence
+as well as expected gender.
+'''
 from pymongo import MongoClient
 
 def gender_counts():

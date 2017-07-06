@@ -1,3 +1,15 @@
+'''
+Unlike misclassify_odds, which takes one element of the parameter space of
+homophily tuple and majority group size to generate graphs from, then
+misses with a variable rate, misclassify_params misses at a fixed rate but
+takes random elements of the parameter space of homophily tuples and
+majority group sizes.
+
+More precisely, it generates symmetric homophily parameters in [0,1)
+and group proportions from the same range.
+
+This code is primarily used in conjunction with mathtest.py
+'''
 import sampling.graph_gen as graph_gen
 import random
 from sampling.lazy_population import population
@@ -5,18 +17,6 @@ from misclassify_odds import get_metrics, misclassify
 import pandas as pd
 
 if __name__ == "__main__":
-	'''
-	Unlike misclassify_odds, which takes one element of the parameter space of
-	homophily tuple and majority group size to generate graphs from, then
-	misses with a variable rate, misclassify_params misses at a fixed rate but
-	takes random elements of the parameter space of homophily tuples and
-	majority group sizes.
-
-	More precisely, it generates symmetric homophily parameters in [0,1)
-	and group proportions from the same range.
-
-	This code is primarily used in conjunction with mathtest.py
-	'''
 	N_MISSES = 1
 	N_GRAPHS = 1000
 	GRAPH_SIZE = 500

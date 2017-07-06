@@ -1,3 +1,9 @@
+'''
+Generates graphs with a fixed parameter set and then tests variable
+misclassification rates.
+Also contains utility methods used by other simulations.
+'''
+
 import random
 import networkx as nx
 import numpy as np
@@ -42,12 +48,6 @@ def get_metrics(node_totals, edge_totals):
 		homophily_a = (d_aa / (d_aa + d_ab) - p_a)/(1 - p_a)
 		homophily_b = (d_bb / (d_bb + d_ba) - p_b)/(1 - p_b)
 	except ZeroDivisionError as e:
-		print(d_aa)
-		print(d_ab)
-		print(d_ba)
-		print(d_bb)
-		print(p_b)
-		print(p_a)
 		raise e
 
 	result = {
