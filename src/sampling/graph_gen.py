@@ -324,21 +324,32 @@ def group_log_log_plots(g):
     plt.xlabel('Log10 degree')
     plt.ylabel('Log10 probability')
     plt.show()
+'''
 
 if __name__ == '__main__':
-    g = generate_powerlaw_group_graph(10000, 2, [1.0, 1.0], .8)
-    group_log_log_plots(g)
+    import pickle
+    import itertools
+    OUTPUT_PATH = '../../sim_output/graphs/'
 
-    g = generate_powerlaw_group_graph(10000, 2, [0.8, 0.8], .8)
-    group_log_log_plots(g)
+    num_nodes = [10000]
+    mean_degs = [2, 4]
+    homophily_vals = [
+        (0.0, 0.0),
+        (0.2, 0.2),
+        (0.5, 0.5),
+        (0.8, 0.8),
+        (1.0, 1.0),
+    ]
+    majority_group_sizes = [0.5, 0.65, 0.8]
 
-    g = generate_powerlaw_group_graph(10000, 2, [0.5, 0.5], .8)
-    group_log_log_plots(g)
-
-    g = generate_powerlaw_group_graph(10000, 2, [0.2, 0.2], .8)
-    group_log_log_plots(g)
-
-    # seems like there's an error on this one
-    g = generate_powerlaw_group_graph(10000, 2, [0.0, 0.0], .8)
-    group_log_log_plots(g)
-'''
+    prod = itertools.product(
+        num_nodes,
+        mean_degs,
+        homophily_vals,
+        majority_group_sizes
+    )
+    for v, m, h, f in prod:
+        for idx in range(1):
+            path = OUTPUT_PATH + '|'.join([v,m,*h,f]) + '_{}'.format(idx) + '.p'
+            g = generate_powerlaw_group_graph(v, m, h, f)
+            nx.write_gpickle(g)
