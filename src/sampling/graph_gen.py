@@ -365,7 +365,7 @@ if __name__ == '__main__':
         majority_group_sizes
     )
     for v, m, h, f in prod:
-        for idx in range(1):
+        for idx in range(10):
             adj_idx = chunk + idx
             str_param_list = [str(x) for x in [v,m,h[0],h[1],f]]
             path = OUTPUT_PATH + '|'.join(str_param_list) + '_{}'.format(adj_idx) + '.p'
