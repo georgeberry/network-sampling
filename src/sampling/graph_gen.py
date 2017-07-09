@@ -352,4 +352,4 @@ if __name__ == '__main__':
         for idx in range(1):
             path = OUTPUT_PATH + '|'.join([v,m,*h,f]) + '_{}'.format(idx) + '.p'
             g = generate_powerlaw_group_graph(v, m, h, f)
-            nx.write_gpickle(g)
+            nx.write_gpickle(g, path)
