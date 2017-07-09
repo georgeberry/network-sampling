@@ -66,7 +66,7 @@ def _gen_groups(n, n_a):
     random.shuffle(groups)
     return groups
 
-def _pick_targets(G, h_prob, target_list, source, m):
+def _pick_targets(G, h_prob, target_list, degree_dict, source, m):
     src_grp = G.node[source]['group']
 
     target_prob_dict = {}
@@ -74,7 +74,8 @@ def _pick_targets(G, h_prob, target_list, source, m):
     for target in target_list:
         tgt_grp = G.node[target]['group']
         # Fudge factor here fixes the cold start problem
-        target_prob = h_prob[(src_grp, tgt_grp)] * (0.00001 + G.degree(target))
+        p_h = h_prob[(src_grp, tgt_grp)]
+        target_prob =  p_h * (0.00001 + degree_dict[target])
         target_prob_dict[target] = target_prob
 
     # targets is the thing we will return
@@ -101,10 +102,10 @@ def _pick_targets(G, h_prob, target_list, source, m):
                 targets.add(tgt_idx)
                 del target_prob_dict[tgt_idx]
                 break
+        search_count += 1
 
         # we need m links and have gone through the process m times with no luck
         # this means there is nothing to link to, so we stop the iteration
-        search_count += 1
         if search_count > m:
             break
 
@@ -180,12 +181,23 @@ def generate_powerlaw_group_graph(
     # Seed nodes, we will weight by probability below
     source = m
     target_list = list(range(m))
+    degree_dict = G.degree()
+    # target_deg_dict = {x: g.degree(x)}
 
     while source < n:
-        targets = _pick_targets(G, h_prob, target_list, source, m)
+        targets = _pick_targets(
+            G,
+            h_prob,
+            target_list,
+            degree_dict,
+            source,
+            m,
+        )
 
-        if len(targets) > 0:
-            G.add_edges_from(zip([source]*m, targets))
+        for target in targets:
+            G.add_edge(source, target)
+            degree_dict[source] += 1
+            degree_dict[target] += 1
 
         # Admit source to be linked to
         target_list.append(source)
@@ -353,7 +365,7 @@ if __name__ == '__main__':
         majority_group_sizes
     )
     for v, m, h, f in prod:
-        for idx in range(10):
+        for idx in range(1):
             adj_idx = chunk + idx
             str_param_list = [str(x) for x in [v,m,h[0],h[1],f]]
             path = OUTPUT_PATH + '|'.join(str_param_list) + '_{}'.format(adj_idx) + '.p'
