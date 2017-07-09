@@ -335,6 +335,7 @@ if __name__ == '__main__':
     OUTPUT_PATH = '../../sim_output/graphs/'
 
     chunk = 10 * int(sys.argv[1])
+    print(chunk)
 
     num_nodes = [10000]
     mean_degs = [2, 4]
@@ -356,7 +357,7 @@ if __name__ == '__main__':
     for v, m, h, f in prod:
         for idx in range(10):
             adj_idx = chunk + idx
-            str_param_list = [str(x) for x in [v,m,*h,f]]
+            str_param_list = [str(x) for x in [v,m,h,f]]
             path = OUTPUT_PATH + '|'.join(str_param_list) + '_{}'.format(adj_idx) + '.p'
             g = generate_powerlaw_group_graph(v, m, h, f)
             g.graph['params'] = {
