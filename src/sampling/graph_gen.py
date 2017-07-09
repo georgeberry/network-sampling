@@ -327,9 +327,14 @@ def group_log_log_plots(g):
 '''
 
 if __name__ == '__main__':
+    # run this:
+    # echo 0 1 2 3 4 5 6 7 8 9 | xargs -n 1 -P 5 -I '{}' -- bash -c 'python graph_gen.py {}'
     import pickle
     import itertools
+    import sys
     OUTPUT_PATH = '../../sim_output/graphs/'
+
+    chunk = 10 * int(sys.argv[1])
 
     num_nodes = [10000]
     mean_degs = [2, 4]
@@ -349,15 +354,17 @@ if __name__ == '__main__':
         majority_group_sizes
     )
     for v, m, h, f in prod:
-        for idx in range(1):
+        for idx in range(10):
+            adj_idx = chunk + idx
             str_param_list = [str(x) for x in [v,m,*h,f]]
-            path = OUTPUT_PATH + '|'.join(str_param_list) + '_{}'.format(idx) + '.p'
+            path = OUTPUT_PATH + '|'.join(str_param_list) + '_{}'.format(adj_idx) + '.p'
             g = generate_powerlaw_group_graph(v, m, h, f)
             g.graph['params'] = {
                 'num_nodes': v,
                 'mean_degree': m,
                 'homophily': h,
                 'majority_size': f,
+                'idx': adj_idx,
             }
             nx.write_gpickle(g, path)
         print('Created graph!')
