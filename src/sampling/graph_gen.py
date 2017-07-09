@@ -340,11 +340,9 @@ if __name__ == '__main__':
     num_nodes = [10000]
     mean_degs = [2, 4]
     homophily_vals = [
-        (0.0, 0.0),
         (0.2, 0.2),
         (0.5, 0.5),
         (0.8, 0.8),
-        (1.0, 1.0),
     ]
     majority_group_sizes = [0.5, 0.65, 0.8]
 
@@ -368,4 +366,4 @@ if __name__ == '__main__':
                 'idx': adj_idx,
             }
             nx.write_gpickle(g, path)
-        print('Created graph!')
+        print('Created graph {}'.format(str([v, m, h, f])))
