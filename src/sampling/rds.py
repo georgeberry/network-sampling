@@ -142,7 +142,7 @@ def top_20pct(df):
     head = df.head(math.floor(rows/5))
     return head.group.value_counts()
 
-def bootstrap_true_dist(degree_vector, mean_deg):
+def importance_resample(degree_vector, mean_deg):
     """
     samples from degree vector where each element is pulled with probability proportional to mean_deg / d
 
@@ -162,7 +162,6 @@ def boot_with_attr(df, mean_deg):
     )
     return df.iloc[sample_idxs,:]
 
-
 def deg_prob(deg_list):
     c = collections.Counter(deg_list)
     total = sum(list(c.values()))
@@ -173,7 +172,7 @@ def deg_prob(deg_list):
 g = generate_powerlaw_group_graph(1000, 4, (0.6, 0.6), 0.6)
 rds_df = sample_rds(g, 200, node_statistic_grp_deg)
 
-boot_deg = bootstrap_true_dist(rds_df.degree, 8)
+boot_deg = importance_resample(rds_df.degree, 8)
 true_deg = list(g.degree().values())
 
 df = pd.DataFrame(
@@ -220,136 +219,5 @@ for _ in range(10):
 df = sample_rds(g, 200, node_statistic_degree)
 rds_estimate(df, 'degree')
 
-
-
-
-
-# old stuff
-
-
-def sample_rds_directed(g, n, node_statistic):
-    """
-    Does a single chain starting from a random seed
-    If you want multiple chains, run this multiple times
-
-    Differs from undirected in that it samples uniformly from the successors
-    and predecessors of the source node. In other words, take node i and
-    get its outlinks (successors) and inlinks (predecessors)
-
-    Inputs:
-        g: graph
-        n: number of nodes to sample
-        node_statistic: a function of a node to compute, takes (g, node)
-    Outputs:
-        node_statistic_list
-        degree_list
-    """
-    node_statistic_list = []
-    degree_list = []
-
-    # random seed
-    source = random.choice(g.nodes())
-    degree_list.append(g.degree(source))
-    node_statistic_list.append(node_statistic(g, source))
-
-    # choose an inlink or outlink w equal probability
-    while len(degree_list) < n:
-        # Pick an edge to follow
-        # So if we can jump either way, RDS works
-        successors = g.successors(source)
-        predecessors = g.predecessors(source)
-        destination = random.choice(successors + predecessors)
-
-        # destination = random.choice(g.neighbors(source))
-        # add data here
-        # do this for destination node
-        degree_list.append(g.degree(destination))
-        node_statistic_list.append(node_statistic(g, destination))
-        # update
-        source = destination
-    deg_arr = np.array(degree_list)
-    node_stat_arr = np.array(node_statistic_list)
-    return deg_arr, node_stat_arr
-
-
-def link_ratios_directed(g, n):
-    """
-    Follow outlinks (successors) only
-
-    Samples a->b, b->a
-    """
-    counts = {
-        ('a', 'b'): 0,
-        ('b', 'a'): 0,
-    }
-
-    # random seed
-    source = random.choice(g.nodes())
-    hops = 0
-
-    # choose an inlink or outlink w equal probability
-    while hops < n:
-        # Pick an edge to follow
-        # So if we can jump either way, RDS works
-        destination = random.choice(g.successors(source))
-
-        # destination = random.choice(g.neighbors(source))
-        # add data here
-        # do this for destination node
-        g1, g2 = g.node[source]['group'], g.node[destination]['group']
-        if (g1, g2) in counts:
-            counts[(g1, g2)] += 1
-        # update
-        source = destination
-        hops += 1
-    return counts
-
-def restrict_graph(g):
-    """
-    Returns a new grpah with the 10pct most connected nodes removed
-    """
-    g = g.copy()
-    degree_list = [
-        {'idx': idx, 'degree': degree} for idx, degree in g.degree().items()
-    ]
-    df = pd.DataFrame(listg.degree().values())
-    cutoff = df.degree.quantile(q=0.9)
-    df = df.loc[df.degree > cutoff]
-    g.remove_nodes_from(set(df.idx))
-    return g
-
-
 if __name__ == '__main__':
     g = generate_powerlaw_group_graph(1000, 4, (0.8, 0.8), 0.5)
-    # deg_arr, node_stat_arr = sample_rds(g, 200, node_statistic_degree)
-    # print(np.mean(deg_arr))
-    # print(rds_estimate(deg_arr, node_stat_arr))
-
-    # g = generate_powerlaw_group_digraph(2000, 4, (0.8, 0.8), 0.8)
-    # deg_arr, node_stat_arr = sample_rds_directed(g, 200, node_statistic_degree)
-    # print(np.mean(deg_arr))
-    # print(rds_estimate(deg_arr, node_stat_arr))
-
-
-    """
-    pop = next(population(g))
-    ratio = pop[1][('a', 'b')] / pop[1][('b', 'a')]
-
-    samples = []
-    for _ in range(100):
-        counts = link_ratios_directed(g, 200)
-        print(counts)
-        samples.append(counts[('a', 'b')] / counts[('b', 'a')])
-
-    print(pop)
-    print(ratio)
-    print(np.mean(samples))
-    """
-
-
-    """
-    print(deg_arr)
-    print(node_stat_arr)
-    print(weight_rds(deg_arr, node_stat_arr))
-    print(next(population(g)))
-    """

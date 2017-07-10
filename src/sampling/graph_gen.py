@@ -368,7 +368,7 @@ if __name__ == '__main__':
         for idx in range(10):
             adj_idx = chunk + idx
             str_param_list = [str(x) for x in [v,m,h[0],h[1],f]]
-            path = OUTPUT_PATH + '|'.join(str_param_list) + '_{}'.format(adj_idx) + '.p'
+            path = OUTPUT_PATH + '_'.join(str_param_list) + '_{}'.format(adj_idx) + '.p'
             g = generate_powerlaw_group_graph(v, m, h, f)
             g.graph['params'] = {
                 'num_nodes': v,
