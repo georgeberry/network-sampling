@@ -4,12 +4,10 @@ from time import strptime, mktime
 from datetime import datetime
 from pymongo import MongoClient
 from collections import deque
-
-api = twitter.Api(consumer_key = 'biSMSPUJdGmWkfZTA7SzTjfov',
-		consumer_secret = 'EMgEUz7Xs3Zo0BlzGswmLnmBSFowcUgiCUVtmIk9cprH6r9Rq3',
-		access_token_key = '547328231-8WNipAFTBlaePvV8jytKiZ2z5hsojIZb2AIbIqGM',
-		access_token_secret = 'eAHzdiAly20SXKUCFDsbhFzMzadb9PqXcuufv5lk3QBR5',
-		sleep_on_rate_limit = True)
+import urllib3
+import requests
+import ssl
+import time
 
 # We have to modify User here to make it hashable.
 twitter.User.__hash__ = lambda self: self.id
@@ -26,6 +24,96 @@ def get_statuses(user):
 ''' Converts twitter's obnoxious timestamp format to UNIX time '''
 def timestamp_after(timestamp,compare_to):
 	return (mktime(strptime(timestamp,"%a %b %d %H:%M:%S %z %Y")) > compare_to)
+
+twitter.Api._TrueRequestUrl = twitter.Api._RequestUrl
+def _AltRequestUrl(self, url, verb, data=None, json=None, enforce_auth=True):
+	if enforce_auth:
+		if url and not self.sleep_on_rate_limit and not url.endswith('rate_limit_status.json'):
+			limit = self.CheckRateLimit(url)
+			remaining = limit[1]
+			reset_time = limit[2]
+			if remaining <= 0 and (reset_time-time.time()) > 0:
+				raise twitter.error.TwitterError([
+					{
+					'message':'Rate limit exceeded',
+					'code':88,
+					'reset':limit.reset
+					}])
+	return self._TrueRequestUrl(url,verb,data,json,enforce_auth)
+
+twitter.Api._RequestUrl = _AltRequestUrl
+
+class APIOverride(type):
+	def __init__(cls, name, bases, nmspc):
+		super(APIOverride, cls).__init__(name,bases,nmspc)
+
+		for method in dir(twitter.Api):
+			if method.startswith("Get"):
+				setattr(cls,method,
+					lambda self, method=method, **kwargs: cls.farm_task(self,method,**kwargs))
+
+class MultiAPI(object, metaclass=APIOverride):
+	def __init__(self, params, sleep_on_rate_limit = True):
+		self.apis = [twitter.Api(
+			consumer_key = param[0],
+			consumer_secret = param[1],
+			access_token_key = param[2],
+			access_token_secret = param[3],
+			sleep_on_rate_limit = False)
+			for param in params]
+		self.sleep_on_rate_limit = sleep_on_rate_limit
+
+	def farm_task(self, method, **kwargs):
+		failed_response = True
+		ret = None
+		least_reset = 15*60
+		while failed_response:
+			i = 0
+			for api in self.apis:
+				i += 1
+				try:
+					ret = getattr(api,method)(
+						**kwargs)
+					failed_response = False
+				except twitter.error.TwitterError as e:
+					if 'Rate limit exceeded' in str(e):
+						failed_response = True
+						if 'reset' in e.args[0][0]:
+							least_reset = min(e.args[0][0]['reset'], least_reset)
+					else:
+						raise e
+
+				if not failed_response:
+					break
+			if not failed_response:
+					break
+			if self.sleep_on_rate_limit:
+				time.sleep(max(int(least_reset - time.time()) + 2, 0))
+			else:
+				raise twitter.error.TwitterError([
+					{
+					'message':'Rate limit exceeded',
+					'code':88,
+					'reset':least_reset
+					}])
+		return ret
+
+accounts = list()
+with open('tokens.dat','r') as tokenfile:
+	working_tuple = list()
+	for line in tokenfile:
+		working_tuple.append(line.strip())
+		if len(working_tuple) == 4:
+			accounts.append(working_tuple)
+			working_tuple = list()
+
+api = MultiAPI(accounts, sleep_on_rate_limit = True)
+# api = twitter.Api(consumer_key = 'biSMSPUJdGmWkfZTA7SzTjfov',
+# 		consumer_secret = 'EMgEUz7Xs3Zo0BlzGswmLnmBSFowcUgiCUVtmIk9cprH6r9Rq3',
+# 		access_token_key = '547328231-8WNipAFTBlaePvV8jytKiZ2z5hsojIZb2AIbIqGM',
+# 		access_token_secret = 'eAHzdiAly20SXKUCFDsbhFzMzadb9PqXcuufv5lk3QBR5',
+# 		sleep_on_rate_limit = True)
+
 
 ''' Generator to get seeds for RDS. It just goes through followers of twitter. '''
 class UserFinder(object):
@@ -80,7 +168,11 @@ def get_next_user_follow(user):
 			del followers[selection - user.friends_count]
 
 		if type(selected_user) is int or type(selected_user) is str:
-			selected_user = get_user(selected_user)
+			try:
+				selected_user = get_user(selected_user)
+			except twitter.error.TwitterError:
+				# Bad user for some reason. Pick a different one.
+				continue
 
 		if valid_user(selected_user):
 			no_valid_next = False
@@ -88,7 +180,7 @@ def get_next_user_follow(user):
 	return selected_user
 
 def valid_user(user):
-	return user.followers_count < 20000 and user.friends_count < 20000
+	return user.followers_count < 20000 and user.friends_count < 20000 and not user.protected
 
 def get_user(user_id):
 	return api.GetUser(user_id = user_id)
@@ -153,21 +245,24 @@ def process_user(user, prev, run):
 
 		return ([user,timeline,prev],nextu)
 	except twitter.error.TwitterError as e:
-		print("Error getting user.")
-		return (None, None)
+		raise e
+		# print("Error getting user.")
+		# return (None, None)
 
-def reset_restore_settings():
+def reset_restore_settings(db_suffix = ""):
 	uname = input("Username: ")
 	pwd = input("Password: ")
 	client = MongoClient('mongodb://' + uname + ':' + pwd + '@127.0.0.1')
-	client['fake_news']['TW_sample_stats'].update({},
+	client['fake_news']['TW_sample_stats' + db_suffix].update({},
 		{'cursor':-1,'subcursor':0,'insert':None,'prevu_a':None,
 		'curru':None,'i': 0, 'run':0})
 
-def grab_graph(uname, pwd, max_grab = 10000):
+def grab_graph(uname, pwd, max_grab = 10000, max_chains = -1, db_suffix = ""):
+	if max_chains == -1:
+		max_chains = max_grab
 	client = MongoClient('mongodb://' + uname + ':' + pwd + '@127.0.0.1')
 
-	restore_settings = client['fake_news']['TW_sample_stats'].find_one({'cursor':{'$exists':True}})
+	restore_settings = client['fake_news']['TW_sample_stats' + db_suffix].find_one({'cursor':{'$exists':True}})
 	finder = UserFinder(cursor = int(restore_settings['cursor']), subcursor = int(restore_settings['subcursor']))
 
 	start_insert = restore_settings['insert']
@@ -186,6 +281,10 @@ def grab_graph(uname, pwd, max_grab = 10000):
 					prevu_a = reconstruct_user(start_prevu_a)
 					insert = deque(start_insert)
 					curru = reconstruct_user(start_curru)
+
+					start_insert = None
+					start_prevu_a = None
+					start_curru = None
 				
 				'''
 				All the actual computation takes place in process_user. 
@@ -197,11 +296,23 @@ def grab_graph(uname, pwd, max_grab = 10000):
 				3-tuple (actually a list) containing curru, curru's 100 most recent tweets, and 
 				the previous user in the chain. curru_a combined with nextu is all the information
 				that you need to save one link in the chain.
+
+				If there's a twitter error somewhere processing the user, we just try again.
+				This should cause us to get a new user. This is slightly wasteful of API calls
+				since we don't remember which users are problematic but errors are rare enough 
+				that it isn't a big deal unless every user to jump to is bad.
+
+				In that case, we just throw a hard error.
 				'''
-				curru_a, nextu = process_user(curru, prevu_a[0] if prevu_a is not None else None, run)
+
+				try:
+					curru_a, nextu = process_user(curru, prevu_a[0] if prevu_a is not None else None, run)
+				except twitter.error.TwitterError as exp:
+					raise exp
+					print("Twitter error where it shouldn't happen.")
 
 				while len(insert) > 2:
-					client['fake_news']['TW_sample'].insert_one(insert.popleft())
+					client['fake_news']['TW_sample' + db_suffix].insert_one(insert.popleft())
 
 				if (curru_a is None and prevu_a is not None) or (i >= max_grab and prevu_a is not None):
 					'''
@@ -255,12 +366,12 @@ def grab_graph(uname, pwd, max_grab = 10000):
 				curru = nextu
 
 			if len(insert) > 0:
-				client['fake_news']['TW_sample'].insert_many(list(insert),ordered=False)
+				client['fake_news']['TW_sample' + db_suffix].insert_many(list(insert),ordered=False)
 			run += 1
-			if i >= max_grab:
+			if i >= max_grab or run >= max_chains:
 				break
 	except (Exception, KeyboardInterrupt) as e:
-		client['fake_news']['TW_sample_stats'].update({'cursor':{'$exists':True}},
+		client['fake_news']['TW_sample_stats' + db_suffix].update({'cursor':{'$exists':True}},
 			{'cursor':finder.cursor,'subcursor':finder.subcursor,
 			'prevu_a':None if prevu_a is None else save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run),
 			'curru':None if curru is None else save_user(curru,[],None,None,-1),
@@ -268,7 +379,7 @@ def grab_graph(uname, pwd, max_grab = 10000):
 		client.close()
 		raise e
 
-	client['fake_news']['TW_sample_stats'].update({'cursor':{'$exists':True}},
+	client['fake_news']['TW_sample_stats' + db_suffix].update({'cursor':{'$exists':True}},
 			{'cursor':finder.cursor,'subcursor':finder.subcursor,
 			'prevu_a':None if prevu_a is None else save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run),
 			'curru':None if curru is None else save_user(curru,[],None,None,-1),
@@ -297,10 +408,14 @@ if __name__ == "__main__":
 	stop = False
 	while not stop:
 		try:
-			grab_graph(uname=uname, pwd=pwd)
+			grab_graph(uname=uname, pwd=pwd, max_chains = 1, db_suffix = "_single")
 			stop = True
+		except (ConnectionError,urllib3.exceptions.SSLError,
+			requests.exceptions.SSLError,ssl.SSLEOFError,
+			requests.exceptions.ConnectionError):
+
+			print("Connection error. Restarting.")
+			continue
 		except KeyboardInterrupt:
 			print("Interrupted.")
 			stop = True
-		except ConnectionError:
-			print("Connection error. Restarting.")
