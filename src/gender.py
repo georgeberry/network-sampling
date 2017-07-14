@@ -32,7 +32,11 @@ def gender_counts():
 	return gender_counts
 
 def pick_gender(node, gender_counts):
-	first_name = node["full_name"].strip().split()[0]
+	try:
+		first_name = node["full_name"].strip().split()[0]
+	except IndexError:
+		# This is a pretty bizarre name.
+		return -1
 
 	if first_name in gender_counts:
 		name_counts = gender_counts[first_name]
@@ -41,12 +45,12 @@ def pick_gender(node, gender_counts):
 	else:
 		return -1
 
-def categorize(gender_counts):
+def categorize(gender_counts, suffix, compute_count = False):
 	uname = input("Username: ")
 	pwd = input("Password: ")
 	client = MongoClient('mongodb://' + uname + ':' + pwd + '@127.0.0.1')
 
-	coll = client['fake_news']['TW_sample']
+	coll = client['fake_news']['TW_sample' + suffix]
 
 	i = 0
 	for node in coll.find():
@@ -58,5 +62,21 @@ def categorize(gender_counts):
 		if (i % 1000) == 0:
 			print(i)
 
+	if compute_count:
+		coll.update({},{'$unset':{'i':''}},multi=True)
+
+		i = 0
+		for init_node in coll.find({'prev':None}):
+			coll.update({"_id":init_node["_id"]},
+				{'$set':{'i':i}})
+			prev = init_node
+			curr = coll.find_one({'prev':init_node['twitter_id'],'twitter_id':init_node['next']})
+			while curr is not None:
+				i += 1
+				coll.update({"_id":curr["_id"]},
+					{'$set':{'i':i}})
+				prev = curr
+				curr = coll.find_one({'prev':prev['twitter_id'],'twitter_id':prev['next'],'i':{'$exists':0}})
+
 if __name__ == "__main__":
-	categorize(gender_counts())
+	categorize(gender_counts(),suffix="_single")

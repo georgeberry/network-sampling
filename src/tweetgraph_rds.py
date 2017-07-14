@@ -185,7 +185,7 @@ def valid_user(user):
 def get_user(user_id):
 	return api.GetUser(user_id = user_id)
 
-def save_user(user, timeline, nextu, prev, run):
+def save_user(user, timeline, nextu, prev, run, i):
 	d = dict()
 	d['twitter_id'] = user.id
 	d['full_name'] = user.name
@@ -196,6 +196,7 @@ def save_user(user, timeline, nextu, prev, run):
 	d['friends'] = user.friends_count
 	d['followers'] = user.followers_count
 	d['run'] = run
+	d['i'] = i
 	return d
 
 '''
@@ -242,6 +243,8 @@ def process_user(user, prev, run):
 			timeline = get_statuses(user)
 
 		nextu = get_next_user_follow(user)
+		if nextu is None:
+			raise twitter.error.TwitterError("Couldn't get a next user.")
 
 		return ([user,timeline,prev],nextu)
 	except twitter.error.TwitterError as e:
@@ -256,6 +259,19 @@ def reset_restore_settings(db_suffix = ""):
 	client['fake_news']['TW_sample_stats' + db_suffix].update({},
 		{'cursor':-1,'subcursor':0,'insert':None,'prevu_a':None,
 		'curru':None,'i': 0, 'run':0})
+	
+def get_restore_state(db_suffix):
+	uname = input("Username: ")
+	pwd = input("Password: ")
+	client = MongoClient('mongodb://' + uname + ':' + pwd + '@127.0.0.1')
+	restore_settings = client['fake_news']['TW_sample_stats' + db_suffix].find_one({'cursor':{'$exists':True}})
+	start_insert = restore_settings['insert']
+	start_prevu_a = restore_settings['prevu_a']
+	start_curru = restore_settings['curru']
+	prevu_a = reconstruct_user(start_prevu_a)
+	insert = deque(start_insert)
+	curru = reconstruct_user(start_curru)
+	return prevu_a,insert,curru
 
 def grab_graph(uname, pwd, max_grab = 10000, max_chains = -1, db_suffix = ""):
 	if max_chains == -1:
@@ -308,8 +324,14 @@ def grab_graph(uname, pwd, max_grab = 10000, max_chains = -1, db_suffix = ""):
 				try:
 					curru_a, nextu = process_user(curru, prevu_a[0] if prevu_a is not None else None, run)
 				except twitter.error.TwitterError as exp:
-					raise exp
-					print("Twitter error where it shouldn't happen.")
+					if len(insert) == 0:
+						print("Twitter error where it shouldn't happen.")
+						raise exp
+					else:
+						curru = prevu_a[0]
+						prevu_a = [prevu_a[2],get_statuses(prevu_a[2]),get_user(insert[-1]['prev'])]
+						insert.pop()
+						continue
 
 				while len(insert) > 2:
 					client['fake_news']['TW_sample' + db_suffix].insert_one(insert.popleft())
@@ -320,7 +342,7 @@ def grab_graph(uname, pwd, max_grab = 10000, max_chains = -1, db_suffix = ""):
 					means we're at the end of a chain and just catching up logging-wise.
 					'''
 					if len(insert) != 0:
-						save_dict = save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run)
+						save_dict = save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run,i)
 						insert.append(save_dict)
 					i += 1
 					print("Chain End")
@@ -330,7 +352,7 @@ def grab_graph(uname, pwd, max_grab = 10000, max_chains = -1, db_suffix = ""):
 					This is just a normal chain element insert. The arguments here to save_user
 					are user to save, user's last 100 tweets, next user, previous user, run.
 					'''
-					save_dict = save_user(prevu_a[0],prevu_a[1],curru_a[0],prevu_a[2],run)
+					save_dict = save_user(prevu_a[0],prevu_a[1],curru_a[0],prevu_a[2],run,i)
 					insert.append(save_dict)
 					i += 1
 					if (i % 100) == 0:
@@ -373,16 +395,16 @@ def grab_graph(uname, pwd, max_grab = 10000, max_chains = -1, db_suffix = ""):
 	except (Exception, KeyboardInterrupt) as e:
 		client['fake_news']['TW_sample_stats' + db_suffix].update({'cursor':{'$exists':True}},
 			{'cursor':finder.cursor,'subcursor':finder.subcursor,
-			'prevu_a':None if prevu_a is None else save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run),
-			'curru':None if curru is None else save_user(curru,[],None,None,-1),
+			'prevu_a':None if prevu_a is None else save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run,i),
+			'curru':None if curru is None else save_user(curru,[],None,None,-1,i),
 			'i':i,'run':run,'insert':list(insert)}, upsert=True)
 		client.close()
 		raise e
 
 	client['fake_news']['TW_sample_stats' + db_suffix].update({'cursor':{'$exists':True}},
 			{'cursor':finder.cursor,'subcursor':finder.subcursor,
-			'prevu_a':None if prevu_a is None else save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run),
-			'curru':None if curru is None else save_user(curru,[],None,None,-1),
+			'prevu_a':None if prevu_a is None else save_user(prevu_a[0],prevu_a[1],None,prevu_a[2],run,i),
+			'curru':None if curru is None else save_user(curru,[],None,None,-1,i),
 			'i':i,'run':run,'insert':list(insert)}, upsert=True)
 	client.close()
 	print("Completed collection.")
@@ -408,11 +430,12 @@ if __name__ == "__main__":
 	stop = False
 	while not stop:
 		try:
-			grab_graph(uname=uname, pwd=pwd, max_chains = 1, db_suffix = "_single")
+			grab_graph(uname=uname, pwd=pwd, max_chains = 1, max_grab = 10200, db_suffix = "_single")
 			stop = True
 		except (ConnectionError,urllib3.exceptions.SSLError,
 			requests.exceptions.SSLError,ssl.SSLEOFError,
-			requests.exceptions.ConnectionError):
+			requests.exceptions.ConnectionError,
+			urllib3.exceptions.ProtocolError):
 
 			print("Connection error. Restarting.")
 			continue

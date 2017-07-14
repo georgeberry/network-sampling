@@ -38,7 +38,7 @@ import random
 from collections import Counter
 import numpy as np
 import networkx as nx
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 def _random_subset(seq, m):
     """
@@ -66,7 +66,7 @@ def _gen_groups(n, n_a):
     random.shuffle(groups)
     return groups
 
-def _pick_targets(G, h_prob, target_list, degree_dict, source, m):
+def _pick_targets(G, h_prob, target_list, source, m):
     src_grp = G.node[source]['group']
 
     target_prob_dict = {}
@@ -74,8 +74,7 @@ def _pick_targets(G, h_prob, target_list, degree_dict, source, m):
     for target in target_list:
         tgt_grp = G.node[target]['group']
         # Fudge factor here fixes the cold start problem
-        p_h = h_prob[(src_grp, tgt_grp)]
-        target_prob =  p_h * (0.00001 + degree_dict[target])
+        target_prob = h_prob[(src_grp, tgt_grp)] * (0.00001 + G.degree(target))
         target_prob_dict[target] = target_prob
 
     # targets is the thing we will return
@@ -102,10 +101,10 @@ def _pick_targets(G, h_prob, target_list, degree_dict, source, m):
                 targets.add(tgt_idx)
                 del target_prob_dict[tgt_idx]
                 break
-        search_count += 1
 
         # we need m links and have gone through the process m times with no luck
         # this means there is nothing to link to, so we stop the iteration
+        search_count += 1
         if search_count > m:
             break
 
@@ -116,8 +115,7 @@ def generate_powerlaw_group_graph(
         n, # number of nodes
         m, # mean degree
         h, # two-vector of homophily
-        f, # probability of majority group
-):
+        f): # probability of majority group
     """
     Logic:
 
@@ -181,113 +179,9 @@ def generate_powerlaw_group_graph(
     # Seed nodes, we will weight by probability below
     source = m
     target_list = list(range(m))
-    degree_dict = G.degree()
-    # target_deg_dict = {x: g.degree(x)}
 
     while source < n:
-        targets = _pick_targets(
-            G,
-            h_prob,
-            target_list,
-            degree_dict,
-            source,
-            m,
-        )
-
-        for target in targets:
-            G.add_edge(source, target)
-            degree_dict[source] += 1
-            degree_dict[target] += 1
-
-        # Admit source to be linked to
-        target_list.append(source)
-
-        # Increment
-        source += 1
-    return G
-
-
-
-def generate_powerlaw_group_digraph(
-        n, # number of nodes
-        m, # mean degree
-        h, # two-vector of homophily
-        f, # probability of majority group
-):
-    """
-    Logic:
-
-    Store two lists of repeated_nodes, one for each group
-    The tricky part is that they need to be weighed by the h_a and h_b numbers
-    Assume that h_a = .7, then all a-nodes must be weighted by .7 / .3 while
-        all b-nodes must be weighted by .3 / .7
-    Seems like simplest way to do this would be to add any a-node to r_a
-        7 times while adding a b-node to r_a 3 times
-    Can simply give people a warning that we're multiplying by 10
-    10x memory hit during graph creation isn't the end of the world
-
-    Algo:
-
-    1. Initialize empty graph
-    2. Add m nodes in each group
-    3. Create node with a random group and attach its links at random to the m
-        seed nodes
-    4. Add all nodes to the repeated_nodes_a and repeated_nodes_b lists
-    5. Then, while the number of nodes less than n
-        5a. Create a new node
-        5b. Give it a random group
-        5c. Choose m targets from the repeated_nodes_a or repeated_nodes_b lists
-            based on group
-        5d. Add edges from source to targets
-        5e. Depending on groups of target nodes, add to repeated_nodes_a or
-            repeated_nodes_b
-        5f. Add source node to repeated_nodes_a and repeated_nodes_b
-        5g. Increment source
-
-
-    TODO:
-    - clean up assertions
-    - reduce number of parameters?
-    - clean up while loop (explicit init?)
-
-
-    """
-    # Unpack homophily values
-    h_prob = {
-        ('a', 'a'): h[0],
-        ('a', 'b'): 1 - h[0],
-        ('b', 'b'): h[1],
-        ('b', 'a'): 1 - h[1],
-    }
-
-    # Get number majority nodes
-    n_a = int(f * n)
-
-    # See template algorithm here: https://networkx.readthedocs.io/en/stable/
-    # _modules/networkx/generators/random_graphs.html#barabasi_albert_graph
-    G = nx.DiGraph()
-
-    # We're going to create all the nodes first, then do link generation
-    # Note that we shuffle the indicies
-    G.add_nodes_from(
-        [(idx, {'group': grp}) for idx, grp in enumerate(_gen_groups(n, n_a))]
-    )
-    G.name = "powerlaw_group_graph({},{})".format(n,m)
-
-    # Seed nodes, we will weight by probability below
-    source = m
-    target_list = list(range(m))
-    degree_dict = G.degree()
-
-    # add outlinks from each of the first m nodes to each other
-    seed_set = set(list(range(m)))
-    for seed_node_idx in seed_set:
-        seed_alter_set = seed_set - {seed_node_idx}
-        for seed_alter_idx in seed_alter_set:
-            G.add_edge(seed_node_idx, seed_alter_idx)
-
-    while source < n:
-        targets = _pick_targets(G, h_prob, target_list, degree_dict, source, m)
+        targets = _pick_targets(G, h_prob, target_list, source, m)
 
         if len(targets) > 0:
             G.add_edges_from(zip([source]*m, targets))
@@ -299,7 +193,8 @@ def generate_powerlaw_group_digraph(
         source += 1
     return G
 
-'''
+
+
 def group_log_log_plots(g):
     """
     Pass this a graph, generates log log plots for groups separately
@@ -337,48 +232,20 @@ def group_log_log_plots(g):
     plt.xlabel('Log10 degree')
     plt.ylabel('Log10 probability')
     plt.show()
-'''
 
 if __name__ == '__main__':
-    # run this:
-    # echo 0 1 2 3 4 5 6 7 8 9 | xargs -n 1 -P 5 -I '{}' -- bash -c 'python graph_gen.py {}'
-    # or
-    # seq 10 | parallel python graph_gen.py
-    import pickle
-    import itertools
-    import sys
-    OUTPUT_PATH = '../../sim_output/graphs/'
+    g = generate_powerlaw_group_graph(10000, 2, [1.0, 1.0], .8)
+    group_log_log_plots(g)
 
-    chunk = 10 * int(sys.argv[1])
-    print(chunk)
+    g = generate_powerlaw_group_graph(10000, 2, [0.8, 0.8], .8)
+    group_log_log_plots(g)
 
-    num_nodes = [10000]
-    mean_degs = [2, 4]
-    homophily_vals = [
-        (0.2, 0.2),
-        (0.5, 0.5),
-        (0.8, 0.8),
-    ]
-    majority_group_sizes = [0.5, 0.65, 0.8]
+    g = generate_powerlaw_group_graph(10000, 2, [0.5, 0.5], .8)
+    group_log_log_plots(g)
 
-    prod = itertools.product(
-        num_nodes,
-        mean_degs,
-        homophily_vals,
-        majority_group_sizes
-    )
-    for v, m, h, f in prod:
-        for idx in range(10):
-            adj_idx = chunk + idx
-            str_param_list = [str(x) for x in [v,m,h[0],h[1],f]]
-            path = OUTPUT_PATH + '_'.join(str_param_list) + '_{}'.format(adj_idx) + '.p'
-            g = generate_powerlaw_group_graph(v, m, h, f)
-            g.graph['params'] = {
-                'num_nodes': v,
-                'mean_degree': m,
-                'homophily': h,
-                'majority_size': f,
-                'idx': adj_idx,
-            }
-            nx.write_gpickle(g, path)
-        print('Created graph {}'.format(str([v, m, h, f])))
+    g = generate_powerlaw_group_graph(10000, 2, [0.2, 0.2], .8)
+    group_log_log_plots(g)
+
+    # seems like there's an error on this one
+    g = generate_powerlaw_group_graph(10000, 2, [0.0, 0.0], .8)
+    group_log_log_plots(g)
