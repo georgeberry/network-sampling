@@ -16,10 +16,10 @@ from helpers import get_n_samples
 
 #### Params ####################################################################
 INPUT_FILE = sys.argv[1]
+print(INPUT_FILE)
 
 OUTPUT_DIR = "/mnt/md0/network_sampling_data/sim_output/"
 OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
-print(OUTPUT_FILE)
 
 # Total number of lines given by:
 # Number of graphs * SAMPLES_PER_GRAPH *
