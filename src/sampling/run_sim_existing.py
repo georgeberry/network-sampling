@@ -3,6 +3,10 @@ import pandas as pd
 import pickle
 import sys, os
 
+"""
+find /mnt/md0/network_sampling_data/graphs | parallel python run_sim_existing.py
+"""
+
 # Sampling methods
 from sampling_methods import sample_edges, sample_nodes, sample_ego_networks
 from sampling_methods import sample_random_walk, sample_snowball, population
@@ -31,6 +35,8 @@ g.graph['params'].update({
 	'h_a': homophily_pair[0],
 	'h_b': homophily_pair[1],
 })
+graph_idx = g.graph['graph_idx']
+
 for samp_idx in range(SAMPLES_PER_GRAPH):
 	sampling_methods = {
 		'sample_edges': sample_edges(g),
