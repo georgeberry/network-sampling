@@ -10,7 +10,7 @@ from sampling_methods import sample_random_walk, sample_snowball, population
 from helpers import get_n_samples
 
 #### Params ####################################################################
-OUTPUT_FILE = "sim_output/output.tsv"
+OUTPUT_FILE = "/mnt/md0/network_sampling_data/sim_output/output.tsv"
 INPUT_DIR = "/mnt/md0/network_sampling_data/graphs"
 
 # Total number of lines given by:
