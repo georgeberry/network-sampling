@@ -30,12 +30,12 @@ SAMPLE_SIZE = 1000
 output_list = list()
 
 g = nx.read_gpickle(INPUT_FILE)
-homophily_pair = g.graph['params']['homophily']
+homophily_pair = g.graph['params'].pop('homophily'])
 g.graph['params'].update({
 	'h_a': homophily_pair[0],
 	'h_b': homophily_pair[1],
 })
-graph_idx = g.graph['graph_idx']
+graph_idx = g.graph['params'].pop('idx')
 
 for samp_idx in range(SAMPLES_PER_GRAPH):
 	sampling_methods = {
