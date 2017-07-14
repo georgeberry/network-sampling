@@ -4,7 +4,7 @@ import pickle
 import sys, os
 
 """
-find /mnt/md0/network_sampling_data/graphs | parallel python run_sim_existing.py
+find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_existing.py
 """
 
 # Sampling methods
