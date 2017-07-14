@@ -64,7 +64,7 @@ for samp_idx in range(SAMPLES_PER_GRAPH):
 			{'d_' + linktype[0] + linktype[1]: count for linktype, count in link_counts.items()}
 		)
 		output_list.append(entry)
-print("Processed '{}' ({} of {}).".format(INPUT_FILE,graph_idx,dir_len))
+print("Processed {}: {}.".format(INPUT_FILE,graph_idx))
 
 with open(OUTPUT_FILE, 'wb') as f:
 	pickle.dump(output_list, f)
