@@ -341,6 +341,8 @@ def group_log_log_plots(g):
 if __name__ == '__main__':
     # run this:
     # echo 0 1 2 3 4 5 6 7 8 9 | xargs -n 1 -P 5 -I '{}' -- bash -c 'python graph_gen.py {}'
+    # or
+    # seq 10 | parallel python graph_gen.py
     import pickle
     import itertools
     import sys
