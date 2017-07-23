@@ -38,8 +38,8 @@ df_coleman = df %>%
   ) %>%
   mutate(
     coleman_denominator_est = ifelse(coleman_numerator_est >= 0,
-                                 1 - prop_d_a,
-                                 prop_d_a),
+                                     1 - prop_d_a,
+                                     prop_d_a),
     coleman_denominator_true = ifelse(coleman_numerator_true >= 0,
                                       1 - trueprop_d_a,
                                       trueprop_d_a),
