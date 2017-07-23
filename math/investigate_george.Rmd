@@ -59,4 +59,3 @@ ggplot(df_coleman) +
   geom_violin(aes(x=method, y=coleman_err, color=method)) +
   facet_grid(h_a ~ trueprop_d_a)
 ```
-```
