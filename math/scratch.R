@@ -20,10 +20,10 @@ ggplot(df_err) +
 # gen data directly
 df_coleman = df %>%
   mutate(
-    est_prop_a = d_a / samp_size,
+    est_prop_a = d_a / (d_a + d_b),
     true_prop_a = true_d_a / num_nodes,
-    est_prop_aa = d_aa / (d_aa + d_ab),
-    true_prop_aa = true_d_aa / (true_d_aa + true_d_ab)
+    est_prop_aa = d_aa / (d_aa + d_ab + d_ba),
+    true_prop_aa = true_d_aa / (true_d_aa + true_d_ab + true_d_ba)
     ) %>%
   filter(method != 'population') %>%
   mutate(

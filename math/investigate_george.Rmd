@@ -64,18 +64,16 @@ ggplot(df_coleman) +
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank()) +
   geom_hline(yintercept=0, linetype='dashed') + 
-  geom_violin(aes(x=method, y=coleman_err, color=method)) +
+  geom_boxplot(aes(x=method, y=coleman_err, color=method)) +
   facet_grid(trueprop_d_a ~ h_a)
 
 ```
 
 # RWRW working
 ```{r coleman_correct, fig.width=10, fig.height=10}
-
-# gen data directly
 df_coleman = df %>%
   mutate(
-    est_prop_a = d_a / samp_size,
+    est_prop_a = d_a / (d_a + d_b),
     true_prop_a = true_d_a / num_nodes,
     est_prop_aa = d_aa / (d_aa + d_ab + d_ba),
     true_prop_aa = true_d_aa / (true_d_aa + true_d_ab + true_d_ba)
