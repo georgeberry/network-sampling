@@ -4,7 +4,7 @@ import pickle
 import sys, os
 
 """
-find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_existing.py
+find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_existing_degreedist.py
 """
 
 # Sampling methods
@@ -23,8 +23,8 @@ OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 
 # Total number of lines given by:
 # Number of graphs * SAMPLES_PER_GRAPH *
-SAMPLES_PER_GRAPH = 100
-SAMPLE_SIZE = 1000
+SAMPLES_PER_GRAPH = 10
+SAMPLE_SIZE = 10
 
 #### Run sim ###################################################################
 output_list = list()
