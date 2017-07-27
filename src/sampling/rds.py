@@ -6,7 +6,7 @@ from graph_gen import generate_powerlaw_group_graph
 from graph_gen import generate_powerlaw_group_digraph
 from sampling_methods import population
 import math
-from plotnine import *
+# from plotnine import *
 import collections
 
 """
@@ -26,7 +26,7 @@ def node_statistic_group_a(g, node):
     Node group
     """
     if g.node[node]['group'] == 'a':
-        return 1
+        return 1, ['group']
     return 0, ['group']
 
 def node_statistic_degree(g, node):
@@ -79,6 +79,104 @@ def sample_rds(g, n, node_statistic):
         node_statistic_list.append(node_stat)
         # update
         source = destination
+    df = pd.DataFrame(node_statistic_list)
+    df.columns = colnames
+    df['degree'] = degree_list
+    return df
+
+def sample_reweighted(g, n, node_statistic):
+    rds_sample = sample_rds(g, n, node_statistic)
+    mu = rds_estimate(rds_sample, 'degree')
+    boot_df = boot_with_attr(rds_sample, mu)
+    return boot_df
+
+def sample_edges(g, n, node_statistic):
+    node_statistic_list = []
+    degree_list = []
+    colnames = None
+
+    while len(degree_list) < n:
+        edge = random.choice(g.edges())
+        for node in edge:
+            if len(degree_list) < n:
+                degree_list.append(g.degree(node))
+                node_stat, colnames = node_statistic(g, node)
+                node_statistic_list.append(node_stat)
+    df = pd.DataFrame(node_statistic_list)
+    df.columns = colnames
+    df['degree'] = degree_list
+    return df
+
+def sample_nodes(g, n, node_statistic):
+    node_statistic_list = []
+    degree_list = []
+    colnames = None
+
+    while len(degree_list) < n:
+        node = random.choice(g.nodes())
+        degree_list.append(g.degree(node))
+        node_stat, colnames = node_statistic(g, node)
+        node_statistic_list.append(node_stat)
+    df = pd.DataFrame(node_statistic_list)
+    df.columns = colnames
+    df['degree'] = degree_list
+    return df
+
+def sample_ego_networks(g, n, node_statistic):
+    node_statistic_list = []
+    degree_list = []
+    colnames = None
+
+    while len(degree_list) < n:
+        node = random.choice(g.nodes())
+        degree_list.append(g.degree(node))
+        node_stat, colnames = node_statistic(g, node)
+        node_statistic_list.append(node_stat)
+
+        s = nx.ego_graph(g, node)
+        s.remove_node(node)
+        for alter in random.sample(s.nodes(), k = len(s.nodes())):
+            if len(degree_list) < n:
+                degree_list.append(g.degree(alter))
+                node_stat, colnames = node_statistic(g, alter)
+                node_statistic_list.append(node_stat)
+
+    df = pd.DataFrame(node_statistic_list)
+    df.columns = colnames
+    df['degree'] = degree_list
+    return df
+
+def sample_snowball(g, n, node_statistic):
+    node_statistic_list = []
+    degree_list = []
+    colnames = None
+
+    seed = random.choice(g.nodes())
+
+    visited_nodes = set()
+
+    frontier = set([seed])
+    degree_list.append(g.degree(seed))
+    node_stat, colnames = node_statistic(g, seed)
+    node_statistic_list.append(node_stat)
+
+    while frontier and len(degree_list) < n:
+        next_frontier = set()
+        for node in frontier:
+            for neighbor in g.neighbors(node):
+                if neighbor not in visited_nodes and len(degree_list) < n:
+                    visited_nodes.add(neighbor)
+                    degree_list.append(g.degree(neighbor))
+                    node_stat, colnames = node_statistic(g, neighbor)
+                    node_statistic_list.append(node_stat)
+                    next_frontier.add(neighbor)
+
+                if not len(degree_list) < n:
+                    break
+            if not len(degree_list) < n:
+                break
+        frontier = next_frontier
+
     df = pd.DataFrame(node_statistic_list)
     df.columns = colnames
     df['degree'] = degree_list
@@ -168,56 +266,53 @@ def deg_prob(deg_list):
     prob_dict = {k: v / total for k, v in c.items()}
     return [prob_dict[x] for x in deg_list]
 
+if __name__ == '__main__':
+    g = generate_powerlaw_group_graph(1000, 4, (0.6, 0.6), 0.6)
+    rds_df = sample_rds(g, 200, node_statistic_grp_deg)
 
-g = generate_powerlaw_group_graph(1000, 4, (0.6, 0.6), 0.6)
-rds_df = sample_rds(g, 200, node_statistic_grp_deg)
+    boot_deg = importance_resample(rds_df.degree, 8)
+    true_deg = list(g.degree().values())
 
-boot_deg = importance_resample(rds_df.degree, 8)
-true_deg = list(g.degree().values())
+    df = pd.DataFrame(
+        [(x, 'boot') for x in boot_deg] + [(x, 'true') for x in true_deg]
+    )
+    df.columns = ['degree', 'kind']
+    (ggplot(df) +
+        geom_density(aes('degree', color='kind')) +
+        theme_bw()
+    )
 
-df = pd.DataFrame(
-    [(x, 'boot') for x in boot_deg] + [(x, 'true') for x in true_deg]
-)
-df.columns = ['degree', 'kind']
-(ggplot(df) +
-    geom_density(aes('degree', color='kind')) +
-    theme_bw()
-)
-
-df = pd.DataFrame({
-    'log_prob': deg_prob(boot_deg) + deg_prob(true_deg),
-    'log_degree': boot_deg + true_deg,
-    'kind': ['boot' for x in boot_deg] + ['true' for x in true_deg],
-})
-(ggplot(df) +
-    aes(x='log_degree', y='log_prob', color='kind') +
-    geom_point() +
-    coord_trans(x = "log10", y = "log10")
-)
-
-
+    df = pd.DataFrame({
+        'log_prob': deg_prob(boot_deg) + deg_prob(true_deg),
+        'log_degree': boot_deg + true_deg,
+        'kind': ['boot' for x in boot_deg] + ['true' for x in true_deg],
+    })
+    (ggplot(df) +
+        aes(x='log_degree', y='log_prob', color='kind') +
+        geom_point() +
+        coord_trans(x = "log10", y = "log10")
+    )
 
 
 
-# estimate proportion of group b in top 20pct
-diffs = []
 
-for _ in range(10):
-    g = generate_powerlaw_group_graph(1000, 4, (0.7, 0.7), 0.7)
-    for _ in range(100):
-        rds_df = sample_rds(g, 200, node_statistic_grp_deg)
-        mu = rds_estimate(rds_df, 'degree')
-        boot_df = boot_with_attr(rds_df, mu)
-        true = top_20pct_true(g)
-        true_prob = true['b'] / true.sum()
-        test = top_20pct(boot_df)
-        test_prob = test['b'] / test.sum()
-        diffs.append(true_prob - test_prob)
-    print(np.mean(diffs))
+
+    # estimate proportion of group b in top 20pct
     diffs = []
 
-df = sample_rds(g, 200, node_statistic_degree)
-rds_estimate(df, 'degree')
+    for _ in range(10):
+        g = generate_powerlaw_group_graph(1000, 4, (0.7, 0.7), 0.7)
+        for _ in range(100):
+            rds_df = sample_rds(g, 200, node_statistic_grp_deg)
+            mu = rds_estimate(rds_df, 'degree')
+            boot_df = boot_with_attr(rds_df, mu)
+            true = top_20pct_true(g)
+            true_prob = true['b'] / true.sum()
+            test = top_20pct(boot_df)
+            test_prob = test['b'] / test.sum()
+            diffs.append(true_prob - test_prob)
+        print(np.mean(diffs))
+        diffs = []
 
-if __name__ == '__main__':
-    g = generate_powerlaw_group_graph(1000, 4, (0.8, 0.8), 0.5)
+    df = sample_rds(g, 200, node_statistic_degree)
+    rds_estimate(df, 'degree')
