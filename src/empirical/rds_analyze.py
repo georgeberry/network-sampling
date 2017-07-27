@@ -16,6 +16,7 @@ i: number in chain of graph
 
 """
 import json
+import networkx as nx
 import pandas as pd
 
 FILE_PATH = '/mnt/md0/network_sampling_data/TW_sample_single.json'
@@ -23,6 +24,7 @@ FILE_PATH = '/mnt/md0/network_sampling_data/TW_sample_single.json'
 records = []
 
 with open(FILE_PATH, 'r') as f:
+    counter = 0
     for line in f:
         record = {}
         j = json.loads(line)
@@ -32,6 +34,9 @@ with open(FILE_PATH, 'r') as f:
         record['male'] = round(percent_male)
         record['degree'] = j['friends'] + j['followers']
         records.append(record)
+        counter += 1
+        if counter % 100 == 0:
+            print(counter)
 
 df = pd.DataFrame(records)
 print(df.head())
@@ -44,5 +49,6 @@ right_hand = df['male'] / df['degree']
 print('The percentage of males is {}'.format(left_hand * right_hand))
 
 # what's the number of crosslinks
+
 
 # what's the coleman homophily measure
