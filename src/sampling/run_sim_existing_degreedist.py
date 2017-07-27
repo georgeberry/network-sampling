@@ -23,8 +23,8 @@ OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 
 # Total number of lines given by:
 # Number of graphs * SAMPLES_PER_GRAPH *
-SAMPLES_PER_GRAPH = 1
-SAMPLE_SIZE = 100
+SAMPLES_PER_GRAPH = 100
+SAMPLE_SIZE = 1000
 
 #### Run sim ###################################################################
 output_list = list()
