@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{verbatim}
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
@@ -30,36 +31,203 @@
 
 \begin{outline}[enumerate]
 \1 Problems to address
-	\2 How should you sample an online network?
-    \2 How close is link tracing to optimal?
-    	\3 For cross group links?
-        \3 For group sizes?
-        \3 For node centrality?
-	\2 How does this work in cases where nodes are imperfectly predicted?
+	\2 Sampling statistics of graph nodes
+    \2 Sampling statistics of graph nodes with an imperfect classifier
+    \2 How close is our proposed method to optimal?
+    \2 How can we see if this works in real life?
 \1 Previous work
-	\2 Sampling methods
-    \2 Homophily metrics
-\1 Simplifying homophily metrics to what we actually measure
-	\2 Group sizes
+	\2 Naive methods (snowball, pure RW, edge, node, ego network)
+    \2 RDS
+    	\3 RDS as MCMC intro
+        \3 RDS tweaks
+    	\3 Importance resampling
+	\2 Homophily
+    	\3 Areas where it exists
+        \3 Various indexes
+        \3 Coleman index
+    \2 Visibility
+    	\3 What is it?
+    \2 (What's a classifier?)
+\1 Findings (each with perfect/imperfect classification)
+    \2 Graph generation
+    	\3 Power law with homophily
+	\2 Group size
     \2 Crossgroup links
-    \2 Degree
-    \2 Others?
-\1 Comparison of sampling methods for
-	\2 Sampling frame vs not
-    \2 Methods where no sampling frame is available
-\1 Performance of various sampling methods for recovering measures
-\1 Case where node attributes are inferred (e.g. have error)
-\1 Empirical demonstration with Twitter and gender
-
+    \2 Coleman homophily
+    \2 Visibility of minority group
+    \2 Crossnational ties
 \end{outline}
 
 \section{Abstract}
 
-Social scientists have long studied homophily between socially salient groups (e.g. race, ethnicity, gender, age), but such analysis is difficult online since frequently neither group labels nor sampling frames are known. We consider the case where a researcher wishes to recover homophily between groups in an online setting, starting from arbitrary seed nodes and without sampling the entire platform. Since machine learning classifiers are often used to predict group labels online, we consider the case where an imperfect classifier is used with a known error rate learned from test data. While many measures of homophily (assortativity, segregation) exist, the vast majority of measures use cross group link counts and node degree. We therefore study the ability of different sampling techniques to recover these two statistics, finding that using a link tracing design works best.
+Homophily, or the tendency of similar people to interact, is a consistent empirical finding in networks research. Despite this consistency, it is still difficult and costly to obtain precise estimates of homophily in networks. We address the problem of obtaining an unbiased estimate of homophily between groups in online social networks when 1) a population sampling frame is not known; and 2) group membership is predicted using an imperfect classifier. We show that using a random walk design and a correction for classifier error leads to an unbiased homophily estimate. Our procedure applies straightforwardly to other statistics, such as the visibility of minority group nodes and the size of the minority group. We demonstrate the usefulness of this technique by estimating the fraction of Twitter users which reside in the U.S. and the homophily of U.S./non-U.S. Twitter users.
 
 \section{Introduction}
 
-Sociologists have studied interactions between socially salient groups for more than a half century \cite{coleman_relational_1958,katz_}. In recent years, the study of \emph{homophily}, or the tendency to observe similar individuals interacting at higher rates, has become an active interdisciplinary area of research in social science \cite{mcpherson_birds_2001}, treated as an important finding itself \cite{marsden_core_1987,lewis_tastes_2008}, an outcome of more microlevel processes \cite{currarini_economic_2009,bramoulle_homophily_2012}, and a cause of important network-level properties \cite{barabasi_emergence_1999} and global behavioral outcomes \cite{}. Homophily has been observed along many dimensions, including race, gender, education, and network position \cite{}.
+Sociologists have studied interactions between socially salient groups for more than a half century \cite{coleman_relational_1958}. In recent years, the study of \emph{homophily}, or the tendency to observe similar individuals interacting at higher rates, has become an active interdisciplinary area of research in social science \cite{mcpherson_birds_2001}, treated as an important finding itself \cite{marsden_core_1987,lewis_tastes_2008}, an outcome of more microlevel processes \cite{currarini_economic_2009,bramoulle_homophily_2012}, and a cause of important network-level properties \cite{barabasi_emergence_1999} and global behavioral outcomes \cite{}. Homophily has been observed along many important dimensions, including race, gender, education, and network position \cite{}.
+
+Estimating homophily precisely requires a statistically valid sample of both nodes and edges in a network. Obtaining such a sample when no sampling frame is known requires using a reweighted random walk technique called respondent driven sampling (RDS) \cite{heckathorn_respondent-driven_2002}. RDS has been shown to successfully sample offline hard-to-reach social populations such as drug users, yet is seldom used in an online context despite strong performance \cite{ribeiro_estimating_2010}.
+
+Used appropriately, RDS can provide an unbiased sample of homophily in online networks. This occurs because the random walk part of RDS performs a random sample of the edges in the graph, while the RDS procedure was developed to estimate population proportions of each group (node sample).
+
+Using a straightforward correction, we extend this result to the common case in online networks where membership in important social groups is inferred via a classifier with a known error rate (e.g. \cite{barbera_less_2016}).
+
+While our main practical focus is homophily, we apply the result of previous RDS research \cite{goel_respondent-driven_2009} that RDS can provide an unbiased estimate of \emph{any} function of the nodes in a graph. In particular, we address estimating the visibility of minority group members \cite{karimi_visibility_2017}, showing that it is possible to obtain an unbiased estimate of the visibility of minority group members by applying RDS plus error correction.
+
+Finally, since our technique is meant to be applied empirically, we perform a random walk crawl of Twitter users in order to estimate the fraction of Twitter users in the U.S. vs abroad, the level of homophily between them, and the fraction of non-U.S. users in the top 20\% of the degree distribution (visibility).
+
+The paper is organized as follows: section <<1>> reviews the relevant literature for this paper, section <<2>> describes our simulations and provides results for the case with no classification error, section <<3>> shows the effects of classification error and the result of our correction technique, and section <<4>> presents the empirical analysis.
+
+\section{Previous work}
+
+This work draws on several lines of research in different fields. We provide a summary of each line of work here. Readers familiar with the content of a section may feel free to skip ahead.
+
+\subsection{Sampling in graphs}
+
+The main technique we draw on here, respondent driven sampling (RDS), was motivated by the desire to validly sample the size of a group (e.g. the proportion of males) in a given network. In particular, RDS assumes that the researcher does not have a list of nodes and edges prior to sampling (no sampling frame), and must therefore learn about the graph through walking the graph only. RDS assumes that the seed nodes are chosen proportional to degree, that the graph is undirected and connected, and that the walker jumps randomly between the nodes.
+
+From this, it is possible to reweight the walk to correctly recover group proportions, or to recover any function of the nodes. We develop this below.
+
+RDS is often contrasted to snowball sampling, or the procedure of starting with an arbitrary node and ``snowballing'' out by collecting information on the seed node's neighbors, all of the neighbors of the seed node's neighbors, and so forth.
+
+Other types of sampling are imaginable if we have a sampling frame \cite{karimi_visibility_2017}: sampling the nodes randomly, sampling edges randomly, and sampling ego networks randomly (as done in the General Social Survey).
+
+Throughout, we contrast these five sampling techniques: 1) RDS; 2) snowball sampling; 3) node sampling; 4) edge sampling; 5) ego network sampling. This gives an idea of the performance and trade-offs of each.
+
+\subsubsection{RDS as MCMC}
+
+In this section, we develop the idea of respondent driven sampling (RDS) as Markov Chain Monte Carlo (MCMC), closely following \cite{goel_respondent-driven_2009}. We refer readers to \cite{heckathorn_respondent-driven_2002,salganik_sampling_2004,goel_respondent-driven_2009} (in that order) for an introduction to respondent driven sampling.
+
+We assume there is a graph $G$ with nodes $V$ and edges $E$. The number of nodes is $N = |V|$. $E$ is undirected, meaning that $(v_1, v_2) \in E \implies (v_2, v_1) \in E$. For simplicity we assume that all edges have the same weight (probability to jump), although this is not required if weights are known. For the purposes of a Markov chain, $V$ are the states the chain can take on. We refer to the chain as $\chi$ with realized steps denoted $X_1, X_2, ...$.
+
+For two nodes $x, y \in V$, we call $K(x, y)$ the \emph{kernel} which gives the probability of transitioning between $x$ and $y$. $K(x, y) \ge 0$ and $\sum_{y \in V} K(x, y) = 1$.
+
+In offline RDS, $K(x, y)$ is the probability of one node recruiting another. For us, $K(x, y)$ is the probability of a crawl jumping from $x$ to $y$ when following a certain type of online signal (e.g. friend relationships).
+
+By assuming that the network is connected, undirected, and has at least one triangle, we can compute the unique \emph{stationary distribution} of the chain $\pi: V \to \mathbb{R}$. This stationary distribution can be written
+
+\begin{equation}
+\sum_{x \in V} \pi(x) K(x, y) = \pi(y)
+\end{equation}
+
+If we denote $\pi$ as the entire stationary vector and $K$ as the $V \times V$ row-stochastic matrix of transition probabilities, then this can be written compactly for all nodes as $\pi^T K = \pi$. From this, it's clear $\pi$ is an eigenvector of $K$. In fact, under the assumptions we have made here the steady state probability can be computed directly. Let $d_x$ be the degree of $x$. Then $\pi(x) = d_x / \sum_y d_y$.
+
+If our chain starts in equilibrium ($X_0 \sim \pi$) a random walk samples from $\pi$. If our chain starts out of equilibrium, then the chain ``bounces around'' before beginning to draw from the steady state distribution. The time to converge from the initial distribution to $\pi$ depends on many factors \cite{}.
+
+The ultimate goal is to draw a sample where each node is weighted equally, but the chain samples nodes with probabilities given by $\pi$. Note that sampling from $\pi$ allows us to take the expectation of $f: V \to \mathbb{R}$ over $\pi$, denoted
+
+\begin{equation}
+\mathbb{E}_\pi f = \sum_{i = 0}^{n-1} f(X_i) \pi(X_i)
+\end{equation}
+
+\noindent
+which is estimated by
+
+\begin{equation}
+\hat{\mathbb{E}}_\pi f = \frac{1}{n} \sum_{i = 0}^{n-1} f(X_i)
+\end{equation}
+
+\noindent
+where $n$ is the length of the walk. This method takes the expectation of $f$ weighted by the probability $\pi(x)$ of being in each state $x$. In the case of a social network, links with high degree will be visited more often and therefore contribute more to the expectation.
+
+Intuitively, we'd like to downweight the high degree nodes and upweight the low degree nodes so that we take an expectation with each node weighted equally, rather than over $\pi$. We can do this by
+
+\begin{align}
+E_\pi (\frac{f(X_i)}{N \cdot \pi(X_i)}) &= \sum_{i=0}^{N} \frac{f(X_i)}{N \cdot \pi(X_i)} \pi(X_i)\\
+&= \frac{1}{N} \sum_{i=0}^{N} f(X_i).
+\end{align}
+
+This is an average over the nodes in the graph. By substituting $\frac{f(X_i)}{N \cdot \pi(X_i)}$ into Equation 4, we obtain
+
+\begin{equation}
+\frac{1}{n \cdot N} \sum_{i=0}^{n-1} \frac{f(X_i)}{\pi(X_i)}
+\end{equation}
+
+\noindent
+which leads to the following estimator
+
+\begin{align}
+\hat{\mu} &= \frac{1}{\sum_{i=0}^{n-1} 1 / \pi(X_i)} \sum_{i=0}^{n-1} \frac{f(X_i)}{\pi(X_i)} \\
+&=\frac{1}{\sum_{i=0}^{n-1} 1 / d_i} \sum_{i=0}^{n-1} \frac{f(X_i)}{d_i}.
+\end{align}
+
+Equation 9 can be computed with degrees $d_i$ from the sampled nodes only. This follows by replacing $\pi(X_i)$ with $d_i / \sum_x d_x$ and noting that the $\sum_x d_x$ terms cancel.
+
+This estimator in Equation 9 indicates that a random walk on an undirected graph can sample a function $f$ of the nodes if the node weighted degrees are known up to a proportional constant.
+
+Note that Equation 7 resembles the importance sampling estimator
+
+\begin{equation}
+\frac{1}{n} \sum_{i=0}^{n-1} \frac{f(X_i) p(X_i)}{q(X_i)}, X_i \sim q
+\end{equation}
+
+\noindent
+if we say that $q(X_i) = \pi(X_k)$ and $p(X_i) = \frac{1}{N}$. In other words, we sample from $q$ but really want to take draws from $p$.
+
+\subsection{Homophily measures}
+
+Many measures of homophily have been proposed by network researchers \cite{bojanowski_measuring_2014}. Similar concepts are often called ``assortativity'' \cite{} or ``segregation'' \cite{}. While these methods have important differences, the common goal is to quantify the amount of nonrandom interaction between groups in networks.
+
+One of the most widely known measures is Coleman's homophily index \cite{coleman_relational_1958}. This measure treats random mixing as its baseline, with 1 indicating perfect homophily and -1 indicating perfect heterophily. We will present results mainly using this measure, with a discussion of how our findings relate to other important homophily, assortativity, and segregation measures. We assume an undirected graph here.
+
+To understand the Coleman homophily index, denoted $H^{Coleman}$, consider a set of social groups $G = \{A, B\}$. When groups are variables we will use the letters $x, y$. These groups have some number of members, $N_A$ and $N_B$, with the population size denoted as $N$. In the two-group case, $N = N_A + N_B$. There are also counts of ties in the network, with the number of ties from $A$ to $B$ called $m_{AB}$ and the fraction of ties called $\eta_{AB} = \frac{m_{AB}}{m_{AA} + m_{AB}}$.
+
+The Coleman homophily measure chooses random tie formation as a baseline. In other words, if the proportion of nodes in group $A$ is $p_A = N_A / N$, then there is no homophily for group $A$ exactly when $\eta_{AA} = p_A$. For group $A$, homophily is
+
+\begin{equation}
+H_A^{Coleman} = \left\{\begin{array}{lr}
+        \frac{\eta_{AA} - p_A}{1 - p_A} & \text{for } \eta_{AA} - p_A \ge 0\\
+        \frac{\eta_{AA} - p_A}{p_A} & \text{for } \eta_{AA} - p_A < 0
+        \end{array}\right\}
+\end{equation}
+
+This index is normalized so that it has its maximum at 1 and minimum at -1. Zero indicates no homophily for group $A$.
+
+% We can extend this measure to the graph level by considering the total fraction of ties in the graph within the same group compared to the expected number of same-group ties given by chance. Denote $\eta_{ingroup} = \sum_x \eta_{xx}$ and
+
+This measure requires two pieces of information up to constants of proportionality: 1) the number of nodes in each group $N_x$; 2) counts of links within and between groups $m_{xy}$. Other commonly used homophily measures can in principle be computed with these data, as seen in Table \ref{table1}. While the of this paper is to sample homophily, we can decompose this task into two separate ones: estimating group sizes and estimating link counts. Focusing on these lower-level measures clarifies where error can enter estimates of homophily, and also extends the analysis here to other measures which can be computed with the same data.
+
+\begin{table}[!htbp] \centering
+  \label{table1}
+\begin{tabular}{@{\extracolsep{5pt}}lcc}
+\\[-1.8ex]\hline
+\hline \\[-1.8ex]
+Name & $m_{xy}$ & $N_x$ \\
+\hline \\[-1.8ex]
+Coleman's homophily index & \checkmark & \checkmark \\
+Freeman's segregation index & \checkmark & \checkmark \\
+E-I index & \checkmark & \\
+Assortativity & \checkmark & \\
+Odds ratio within groups & \checkmark & \\
+\hline
+\hline \\[-1.8ex]
+\end{tabular}
+  \caption{Homophily measures and required data. A checkmark indicates that the measure is required to compute the index. $m_{xy}$ indicates that link counts are required for all groups $x, y \in G$ up to a constant of proportionality. $N_x$ indicates that node counts are required for all groups $x \in G$ up to a constant of proportionality.}
+\end{table}
+
+\subsection{Visibility}
+
+The concept of visibility has been recently studied in the network literature \cite{karimi_visibility_2017, wagner_sampling_2017}. This concept is defined as the presence of members of a minority group in the top quantile of the degree distribution. In the case of sampling, we attempt to recover the proportion of the minority group in the top  quantile (e.g. the top fifth).
+
+
+\subsection{Classification}
+
+\section{Findings}
+
+\subsection{Graph generation}
+
+\subsection{Sampling group size}
+
+\subsection{Sampling crossgroup links}
+
+\subsection{Sampling Coleman homophily}
+
+\subsection{Sampling minority group visibility}
+
+\subsection{Empirical sampling of crossnational ties}
+
+
+\newpage
 
 Despite the importance of understanding homophily, studies of online interaction often draw on convenience samples and come without important demographic labels. Convenience samples, such as those obtained from sites like Twitter using the public search API, often provide useful instruments for studying behavior despite differing from the underlying population in unknown ways. In some studies, the lack of demographic labels is addressed through prediction methods relying on publicly available data \cite{} or crowdsourced labels and machine learning methods \cite{}.
 
@@ -69,41 +237,99 @@ These two insights together enable using link tracing designs to estimate group 
 
 \section{Homophily measures}
 
-\section{Link tracing for estimating functions of vertices}
 
-If we assume that a network is connected (strongly connected for directed graphs), we can apply the Markov Chain Monte Carlo (MCMC) method. This allows computing an unbiased estimate of an arbitrary function of the nodes in a graph. To see this, we follow the formalization in \cite{goel_respondent-driven_2009}.
+\section{Sampling on graphs}
 
-$V$ is the population of nodes of size $N$ from which we sample. For two nodes $x, y \in V$, we call $K(x, y)$ the \emph{kernel} which gives the probability of transitioning between $x$ and $y$. $K(x, y) \ge 0$ and $\sum_{y \in V} K(x, y) = 1$.
+The difficulty of sampling from online networks with homophily and multiple groups has recently drawn attention \cite{wagner_sampling_2017} in connection with the visibility minority group nodes \cite{karimi_visibility_2017}. Particularly in online settings, extreme degree disparities can cause a ``majority illusion'' where a huge fraction of users observe globally rare states in their ego networks (e.g. celebrity status) \cite{lerman_majority_2016}.
 
-In respondent driven sampling (RDS), $K(x, y)$ is the probability of one node recruiting another. For us, $K(x, y)$ is the probability of a crawl jumping from $x$ to $y$ when following a certain type of online signal (e.g. @mentions).
+Many studies address sampling network centrality measures ... \cite{}
 
-By assuming that the network is connected (strongly connected for directed graphs), we can compute the unique \emph{stationary distribution} of the chain $\pi: V \to \mathbb{R}$. This stationary distribution can be written
+Previous work has considered five sampling methods: edge (E), node (N), snowball (S), random walk (RW), and reweighted random walk also known as respondent driven sampling (RDS) \cite{wagner_sampling_2017,wang_sampling_2015,heckathorn_respondent-driven_2002}. We argue that RDS offers a methodology to sample important properties of graphs including homophily.
+
+% probably need notation for the chain itself, a fancy X?
+
+
+
+\subsection{Variance}
+
+\subsection{Distributions}
+
+Up until this point we have focused on estimating the mean of a function $f$ over the population of nodes $V$. We may also be interested in the distribution of $f$, such as in the case of estimating the degree distribution of the graph.
+
+When we draw samples from a random walk, we sample proportional to node degree. In other words, higher degree nodes have higher probabilities of being sampled. If we downweight high degree nodes and upweight low degree nodes, we can appropriately correct our sample to match the underlying degree distribution.
+
+For instance, if we know node $i$ with degree $d_i$ is sampled with probability $\pi(X_i)$ and we wanted to sample it with probability $1/N$, then we can use the ratio $p/q$ to get the importance weight. In our case, this comes out to
 
 \begin{equation}
-\sum_{x \in V} \pi(x) K(x, y) = \pi(y)
+\frac{p(X_i)}{q(X_i)} = \frac{1}{N \pi(X_i)} = \frac{D}{N d_i} = \frac{\bar{d}}{d_i}.
 \end{equation}
 
-If we denote $\pi$ as the entire stationary vector and $K$ as the $V \times V$ row-stochastic matrix of transition probabilities, then this can be written compactly for all nodes as $\pi^T K = \pi$. From this, it's clear that if we know $K$ we can find $\pi$ since it is an eigenvector of $K$. However, we do not know $K$ (we usually do not know $V$, either). However, if our chain is in equilibrium ($X_0 \sim \pi$) a random walk samples from $\pi$.
-
-We wish to obtain an unbiased estimate of the expectation of a function $f: V \to \mathbb{R}$
+After drawing a sample from the random walk, we can approximate the distribution of $f(X_i)$ using the importance weight to correct the distribution of $f$ obtained from the sample. This follows straightforwardly from the fact that weighting by $\frac{\bar{d}}{d_i}$ gives
 
 \begin{equation}
-\mathbb{E}_\pi f = \sum_{i = 0}^{n-1} f(X_i) \pi(X_i)
+P_{reweighted}(X_i) = \pi(X_i) \frac{\bar{d}}{d_i} = \frac{d_i}{D} \frac{D}{N d_i} = \frac{1}{N}.
 \end{equation}
 
 \noindent
-which the MCMC method allows us to do with
+Using the importance weight $\frac{\bar{d}}{d_i}$ to approximate samples drawn from $p$ is called importance resampling. In practice, we use the reweighted counterpart $\frac{\bar{d}}{d_i} / \sum_{j \in \chi} \frac{\bar{d}}{d_j}$.
 
-\begin{equation}
-\hat{\mathbb{E}}_\pi f = \frac{1}{n} \sum_{i = 0}^{n-1} f(X_i)
-\end{equation}
+Since our importance resample approximates draws from $p \sim \frac{1}{N}$, the distribution of $f$ on the resample will approximate the true distribution of $f$ in the graph $V$.
+
+\begin{comment}
+
+To see this, note that the true density of $f$ is given by $P(f(V) = k) = V_k / N$, where $f(V)$ denotes the distribution of $f$ in the graph, $V_k = |\{i \in V: f(X_i) = k\}|$ is the number of nodes which have value $f(X_i) = k$, and $N$ is the number of nodes in the graph.
+
+Note that the random walk gives us an observation $f(X_i)$ with probability $\pi(X_i) = d_i / D$, where $D$ is the degree of the graph. If we multiply this probability by the ``inclusion weight'' in Equation 11, we obtain
+
+
 
 \noindent
-where $X_i$ indicates the $i$th realization of random walk $X$ with length $n$. RDS chooses $f$ to compute a \emph{uniform mean} over the nodes in order to obtain the proportion of individuals belonging to some group of interest.
+or the uniform distribution on nodes. Using this weight, we can see that in a sample of size $n$
 
-\section{Simulation setup}
+\begin{equation}
+\hat{P}(f(X_i) = k) = \frac{V_k(n)}{n} = \frac{}
+\end{equation}
+
+This implies that when we obtain a sample from the walk $\chi$, we can approximate the true distribution of $f$ by weighting the sampled elements by $\frac{\bar{d}}{d_i}$.
+
+Practically speaking, we can bootstrap an estimate of the distribution $f(X_i)$. For each $i \in \chi$, we use $\frac{\bar{d}}{d_i}$ as the importance weight. We can see that this process converges in distribution to $f(V)$, or the distribution in the graph.
+
+Assume $f(V)$ is a discrete distribution (e.g. degree). Then we need to show that $P(f(X_i) = k) \to P(f(V) = k)$ as $i \to \infty$, where $f$ indicates the true distribution and $k$ is some value that $f$ takes on. Denote the set of nodes with $f(X_i = k)$ as $V_k$. The probability that $f(X_i)$ takes on value $k$ in the walk is denoted $\pi(f(X_i) = k) = \sum_{V_k} d_i / D$, or the sum degree of the set of nodes with value $f(X_i) = k$, divided by the total degree of the graph. Assume our samples are from a chain in equilibrium, then the corrected distribution has
+
+\begin{align}
+P(f(X_i) = k) &= \pi(f(X_i) = k) \frac{\bar{d}}{d_i}\\
+&= \frac{\sum_{V_k} d_j}{D} \frac{\bar{d}}{d_i}\\
+&= \frac{\sum_{V_k} d_j}{D} \frac{D}{N d_i}\\
+&= \frac{|V_k|}{N}\\
+&= P(f(V) = k).
+\end{align}
+
+This argument indicates that weighting draws from the random walk by $\frac{\bar{d}}{d_i}$ faithfully replicates the distribution of $f(X_i)$. In practice, we estimate the mean degree from a walk, potentially the same one we bootstrap from. This introduces error according to the sampling variance of estimating the mean.
+
+\end{comment}
+
+\section{Computational experiments}
+
+We follow recent work on preferential attachment networks with group homophily \cite{}. Simulating the creation of a standard powerlaw network, each node gets a fixed budget of links and chooses endpoints proportional to the degree of the receiving node \cite{}. In the case with groups and homophilious attachment on groups, both factors influence a node's decision to choose a destination for its link.
+
+The framework we developed above allows us to restrict most of our thinking to the choice of $f$. When $f$ is node degree, we estimate graph mean degree; when $f$ is an indicator variable for a group, we estimate the size of that group.
+
+\subsection{Homophily}
+
+Coleman's homophily index requires an estimate of group sizes, and an estimate of cross-group interaction rates.
+
+To get an estimate of group sizes, choose $f = $ in group.
+
+\subsection{Degree distribution}
+
+
+\subsection{Visibility}
+
+
 
 \section{Empirical analysis}
+
+\subsection{Restrictions}
 
 \section{Conclusion}
 
@@ -288,7 +514,7 @@ For different $p_a$ and $p_b$
 (1-p_a)^2 & p_b(1-p_a) & p_b(1-p_a) & p_bp_b\\
 p_a(1-p_a) & (1-p_a)(1-p_b) & p_ap_b & p_b(1-p_b)\\
 p_a(1-p_a) & p_ap_b & (1-p_a)(1-p_b) & p_b(1-p_b)\\
-p_a^2 & p_a(1-p_b) & (1-p_b)p_a & (1-p_b)^2
+p_a^2 & p_a(1-p_b) & p_a(1-p_b) & (1-p_b)^2
 \end{bmatrix}
 \end{equation}
 for edges and
