@@ -1,3 +1,13 @@
+# Tex
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.pdf
+*.synctex.gz
+
 *.csv
 
 # Byte-compiled / optimized / DLL files

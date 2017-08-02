@@ -4,22 +4,31 @@ df <- read_tsv('/Users/g/Desktop/sim_table_plus_all.tsv') %>%
   mutate(h_a = paste0("Ingroup: ", h_a),
          majority_size = paste0("Majority fraction: ", majority_size))
 
-# node sampling
+#### node sampling  ##############################################################
 node_sample_df = df %>%
   mutate(node_sample_err = prop_d_a - trueprop_d_a) %>%
   select(method, node_sample_err, majority_size, h_a) %>%
   filter(method != 'population')
+  # group_by(method, majority_size, h_a) %>%
+  # summarize(
+  #   node_sample_err_mean = mean(node_sample_err),
+  #   node_sample_err_ucl = quantile(node_sample_err, 0.95),
+  #   node_sample_err_lcl = quantile(node_sample_err, 0.05))
 
-ggplot(data=node_sample_df) +
+p1 = ggplot(data=node_sample_df) +
   theme_bw() +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  geom_hline(yintercept=0, alpha=0.5) + 
+  geom_hline(yintercept=0, alpha=0.5, linetype='dashed') + 
   geom_violin(aes(y=node_sample_err, x=method, color=method)) +
-  stat_summary(fun.y="mean", geom="point", aes(y=node_sample_err, x=method, color=method), shape=43, size=4) +
+  stat_summary(fun.y="mean",
+               geom="point",
+               shape=43,
+               size=3,
+               aes(y=node_sample_err, x=method, color=method)) +
   facet_grid(majority_size~h_a) +
   scale_color_discrete(name="Sampling method",
                        labels=c("Edge",
@@ -31,22 +40,28 @@ ggplot(data=node_sample_df) +
   labs(title="Node sampling error", y="Sampling error") +
   lims(y=c(-0.5, 0.5))
 
-# edge sampling
+ggsave('/Users/g/Documents/network-sampling/p1.pdf', width=9, height=9)
+
+#### edge sampling  ##############################################################
 edge_sample_df = df %>%
   mutate(edge_sample_err = prop_d_aa - trueprop_d_aa) %>%
   select(method, edge_sample_err, majority_size, h_a) %>%
   filter(method != 'population')
 
-ggplot(data=edge_sample_df) +
+p2 = ggplot(data=edge_sample_df) +
   theme_bw() +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  geom_hline(yintercept=0, alpha=0.5) +
+  geom_hline(yintercept=0, alpha=0.5, linetype='dashed') + 
   geom_violin(aes(y=edge_sample_err, x=method, color=method)) +
-  stat_summary(fun.y="mean", geom="point", aes(y=edge_sample_err, x=method, color=method), shape=43, size=4) +
+  stat_summary(fun.y="mean",
+               geom="point",
+               shape=43,
+               size=3,
+               aes(y=edge_sample_err, x=method, color=method)) +
   facet_grid(majority_size~h_a) +
   scale_color_discrete(name="Sampling method",
                        labels=c("Edge",
@@ -58,23 +73,10 @@ ggplot(data=edge_sample_df) +
   labs(title="Edge sampling error", y="Sampling error") +
   lims(y=c(-0.5, 0.5))
 
-# Correlation between edge and node error
-df_err = df %>%
-  mutate(
-    node_p_err = prop_d_a-trueprop_d_a,
-    ingroup_p_err = prop_d_aa-trueprop_d_aa,
-    params = paste0('p_a=',as.character(trueprop_d_a), ' h_a=', as.character(h_a))
-  ) %>%
-  select(method, node_p_err, ingroup_p_err, params) %>%
-  filter(method %in% c('sample_edges', 'sample_nodes', 'sample_RWRW', 'sample_random_walk')) %>%
-  sample_n(10000)
+ggsave('/Users/g/Documents/network-sampling/p2.pdf', width=9, height=9)
 
-ggplot(df_err) +
-  geom_point(aes(y=ingroup_p_err, x=node_p_err)) +
-  facet_grid(params ~ method)
-
-# coleman plots
-df_coleman = df %>%
+#### coleman plots ###############################################################
+coleman_sample_df = df %>%
   mutate(
     est_prop_a = d_a / (d_a + d_b),
     true_prop_a = true_d_a / num_nodes,
@@ -99,16 +101,20 @@ df_coleman = df %>%
          coleman_err = coleman_est - coleman_true) %>%
   select(method, coleman_err, h_a, majority_size)
 
-ggplot(df_coleman) + 
-  theme_bw() + 
+p3 = ggplot(data=coleman_sample_df) +
+  theme_bw() +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  geom_hline(yintercept=0, alpha=0.5) + 
-  geom_violin(aes(x=method, y=coleman_err, color=method)) +
-  stat_summary(fun.y="mean", geom="point", aes(y=coleman_err, x=method, color=method), shape=43, size=4) +
+  geom_hline(yintercept=0, alpha=0.5, linetype='dashed') + 
+  geom_violin(aes(y=coleman_err, x=method, color=method)) +
+  stat_summary(fun.y="mean",
+               geom="point",
+               shape=43,
+               size=3,
+               aes(y=coleman_err, x=method, color=method)) +
   facet_grid(majority_size~h_a) +
   scale_color_discrete(name="Sampling method",
                        labels=c("Edge",
@@ -118,4 +124,23 @@ ggplot(df_coleman) +
                                 "RDS",
                                 "Snowball")) +
   labs(title="Coleman homophily sampling error", y="Sampling error") +
-  lims(y=c(-0.5, 0.5))
+  lims(y=c(-1, 1))
+
+ggsave('/Users/g/Documents/network-sampling/p3.pdf', width=9, height=9)
+
+
+
+#### Correlation between edge and node error #####################################
+df_err = df %>%
+  mutate(
+    node_p_err = prop_d_a-trueprop_d_a,
+    ingroup_p_err = prop_d_aa-trueprop_d_aa,
+    params = paste0('p_a=',as.character(trueprop_d_a), ' h_a=', as.character(h_a))
+  ) %>%
+  select(method, node_p_err, ingroup_p_err, params) %>%
+  filter(method %in% c('sample_edges', 'sample_nodes', 'sample_RWRW', 'sample_random_walk')) %>%
+  sample_n(10000)
+
+ggplot(df_err) +
+  geom_point(aes(y=ingroup_p_err, x=node_p_err)) +
+  facet_grid(params ~ method)
