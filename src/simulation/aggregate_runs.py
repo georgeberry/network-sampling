@@ -18,7 +18,8 @@ def agg(input_path: str, output_file: str):
             records = pickle.load(f)
             all_records.extend(records)
 
-    return pd.DataFrame(all_records)
+    df = pd.DataFrame(all_records)
+    df.to_csv(output_file, sep='\t')
 
 if __name__ == '__main__':
     agg()
