@@ -181,7 +181,7 @@ def generate_powerlaw_group_graph(
     # Seed nodes, we will weight by probability below
     source = m
     target_list = list(range(m))
-    degree_dict = G.degree()
+    degree_dict = dict(G.degree())
     # target_deg_dict = {x: g.degree(x)}
 
     while source < n:

@@ -3,10 +3,9 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from graph_gen import generate_powerlaw_group_graph
-from graph_gen import generate_powerlaw_group_digraph
 from sampling_methods import population
 import math
-# from plotnine import *
+from plotnine import *
 import collections
 
 """
