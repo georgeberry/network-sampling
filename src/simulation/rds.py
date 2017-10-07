@@ -20,6 +20,7 @@ edge statistics accept (g, source, destination)
 these must return a number
 """
 
+
 def node_statistic_group_a(g, node):
     """
     Node group
@@ -37,7 +38,6 @@ def node_statistic_degree(g, node):
 def node_statistic_grp_deg(g, node):
     """
     Want to sample the fraction of group 'a' nodes in top 20 pct of degree
-
     """
     deg = g.degree(node)
     grp = g.node[node]['group']
@@ -265,10 +265,114 @@ def deg_prob(deg_list):
     prob_dict = {k: v / total for k, v in c.items()}
     return [prob_dict[x] for x in deg_list]
 
-if __name__ == '__main__':
-    g = generate_powerlaw_group_graph(1000, 4, (0.6, 0.6), 0.6)
-    rds_df = sample_rds(g, 200, node_statistic_grp_deg)
+def misclassify_nodes(g, p):
+    for n, attr in g.nodes_iter(data=True):
+        grp = attr['group']
+        if random.random() < p:
+            if grp == 'a':
+                attr['group'] = 'b'
+            if grp == 'b':
+                attr['group'] = 'a'
+    return g
 
+def importance_resample_with_correction(
+    focal_vector,
+    degree_vector,
+    mean_deg,
+    p_misclassify, # probability of misclassifying focal vector
+):
+    # importance sampling weights
+    p = (mean_deg / degree_vector) / sum((mean_deg / degree_vector))
+
+    resample = np.random.choice(focal_vector, size=5000, replace=True, p=p)
+
+    #print('naive estimate: {}'.format(resample.mean()))
+
+    # correct here for classifier error
+    m_a = resample.mean()
+    m_b = 1 - m_a
+
+    c_ab, c_ba = p_misclassify, p_misclassify
+    c_aa, c_bb = 1 - c_ab, 1 - c_ba
+
+    # p convert to a given classified as b
+    a_given_b_correction_factor = (c_ab / m_b) * (m_a * c_bb - m_b * c_ba) / (c_aa * c_bb - c_ba * c_ab)
+    print(a_given_b_correction_factor)
+
+    # p convert to b given classified as a
+    b_given_a_correction_factor = (c_ba / m_a) * (m_b * c_aa - m_a * c_ab) / (c_aa * c_bb - c_ba * c_ab)
+    print(b_given_a_correction_factor)
+
+    f = []
+
+    for val in resample:
+        if val == 1 and random.random() < b_given_a_correction_factor:
+            f.append(0)
+        elif val == 0 and random.random() < a_given_b_correction_factor:
+            f.append(1)
+        else:
+            f.append(val)
+
+    s = pd.Series(f)
+
+    #print('better estimate: {}'.format(s.mean()))
+
+    output_list = [
+        {'kind': 'uncorrected', 'value': resample.mean()},
+        {'kind': 'corrected', 'value': s.mean()},
+    ]
+
+    return output_list
+
+if __name__ == '__main__':
+g = generate_powerlaw_group_graph(10000, 4, (0.6, 0.6), 0.6)
+g = misclassify_nodes(g, p=0.3)
+
+rds_df = sample_rds(g, 1000, node_statistic_group_a)
+mean_deg_hat = rds_estimate(rds_df, 'degree')
+
+m_a = rds_df.group.mean()
+m_b = 1 - m_a
+
+c_ab, c_ba = 0.3, 0.3
+c_aa, c_bb = 1 - c_ab, 1 - c_ba
+
+# p convert to a given classified as b
+a_given_b_correction_factor = (c_ab / m_b) * (m_a * c_bb - m_b * c_ba) / (c_aa * c_bb - c_ba * c_ab)
+
+# p convert to b given classified as a
+b_given_a_correction_factor = (c_ba / m_a) * (m_b * c_aa - m_a * c_ab) / (c_aa * c_bb - c_ba * c_ab)
+
+m_a * b_given_a_correction_factor + m_b * (1 - a_given_b_correction_factor)
+
+m_b * a_given_b_correction_factor + m_a * (1 - b_given_a_correction_factor)
+
+m = np.array([m_a, 1 - m_a])
+C = np.array([
+    [c_aa, c_ba],
+    [c_ab, c_bb],
+])
+
+print(m)
+print(inv(C).dot(m))
+
+
+
+
+
+vals = []
+while len(vals) < 1000:
+    boot_deg = importance_resample_with_correction(
+        rds_df.group,
+        rds_df.degree,
+        mean_deg_hat,
+        p_misclassify=0.3,
+    )
+    vals.extend(boot_deg)
+
+pd.DataFrame(vals).to_csv('/Users/g/Documents/network-sampling/test_resample.tsv', sep='\t')
+
+    """
     boot_deg = importance_resample(rds_df.degree, 8)
     true_deg = list(g.degree().values())
 
@@ -315,3 +419,4 @@ if __name__ == '__main__':
 
     df = sample_rds(g, 200, node_statistic_degree)
     rds_estimate(df, 'degree')
+    """

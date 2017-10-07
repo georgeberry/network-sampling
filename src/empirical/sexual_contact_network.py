@@ -16,9 +16,9 @@ import networkx as nx
 import pandas as pd
 
 import sys
-sys.path.append('../simulation')
+sys.path.append('..')
 
-from rds import *
+from simulation.rds import *
 
 #### node statistic functions ##################################################
 
@@ -71,7 +71,7 @@ print((
     'True degree: {}'.format(gender_sum / len(g), degree_sum / len(g))
 ))
 
-rds_df = sample_rds(g, 5000, node_statistic_female)
+rds_df = sample_rds(g, 1000, node_statistic_female)
 mu_gender = rds_estimate(rds_df, 'gender')
 mu_degree = rds_estimate(rds_df, 'degree')
 
