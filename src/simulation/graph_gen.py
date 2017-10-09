@@ -343,7 +343,7 @@ if __name__ == '__main__':
     # run this:
     # echo 0 1 2 3 4 5 6 7 8 9 | xargs -n 1 -P 6 -I '{}' -- bash -c 'python graph_gen.py {}'
     # or
-    # seq 10 | parallel python graph_gen.py
+    # seq 5 | parallel python graph_gen.py
     import pickle
     import itertools
     import sys

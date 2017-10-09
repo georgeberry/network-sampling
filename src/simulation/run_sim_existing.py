@@ -6,12 +6,15 @@ import sys, os
 import itertools
 from copy import deepcopy
 import collections
+import math
 
 """
 Run this:
     find /home/geb97/network-sampling/sim_output/graphs -type f | parallel python run_sim_existing.py
 
 To test: python run_sim_existing.py /home/geb97/network-sampling/sim_output/graphs/10000_2_0.2_0.2_0.5_0.p
+
+To test locally: python run_sim_existing.py /Users/g/Documents/network-sampling/graphs/10000_2_0.2_0.2_0.5_0.p
 
 Requires GNU parallel. This file operates on one graph file and outputs one
 output file. Then, aggregate_runs.py joins them together into one big df
@@ -44,13 +47,13 @@ INPUT_FILE = sys.argv[1]
 # INPUT_FILE = '/home/geb97/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
 # print(INPUT_FILE)
 
-# OUTPUT_DIR = "/mnt/md0/network_sampling_data/sim_output/"
-OUTPUT_DIR = '/home/geb97/network-sampling/sim_output/stats/'
+OUTPUT_DIR = '/Users/g/Documents/network-sampling/'
+# OUTPUT_DIR = '/home/geb97/network-sampling/sim_output/stats/'
 OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 
 # Total number of lines given by:
 # N_GRAPHS * SAMPLES_PER_GRAPH * len(SAMPLE_SIZE_INCREMENTS) * num sampling methods
-SAMPLES_PER_GRAPH = 10
+SAMPLES_PER_GRAPH = 50
 SAMPLE_SIZE = 2500 # 25% of simulation graphs
 INCREMENT_SIZE = 500
 SAMPLE_SIZE_INCREMENTS = np.arange(
@@ -76,6 +79,7 @@ sampling_methods = {
     'sample_nodes':sample_nodes,
     # 'sample_ego_networks':sample_ego_networks,
     'sample_rds': sample_rds,
+    'sample_rds_double': sample_rds,
     'sample_snowball':sample_snowball,
 }
 
@@ -169,12 +173,28 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
         gg = deepcopy(g)
 
     method, fn = sampling_method
-    if method == 'sample_rds':
-        df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
-        m_b = rds_estimate(df, 'group')
-        m_a = 1 - m_b
-        mu = rds_estimate(df, 'degree')
-        df = boot_with_attr(df, mu, n=20000)
+    if 'sample_rds' in method:
+        if method == 'sample_rds':
+            df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
+            m_b = rds_estimate(df, 'group')
+            m_a = 1 - m_b
+            mu = rds_estimate(df, 'degree')
+            df = boot_with_attr(df, mu, n=20000)
+        if method == 'sample_rds_double':
+            df, crosslink_dict = fn(
+                gg,
+                math.floor(sample_size / 2),
+                node_statistic_grp_b,
+            )
+            m_b = rds_estimate(df, 'group')
+            m_a = 1 - m_b
+            df, crosslink_dict = fn(
+                gg,
+                math.floor(sample_size / 2),
+                node_statistic_grp_b,
+            )
+            mu = rds_estimate(df, 'degree')
+            df = boot_with_attr(df, mu, n=20000)
     else:
         df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
         # janky: assume node stat is group b
@@ -246,7 +266,7 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
                 l_bb_hat,
                 p_misclassify,
         )
-        if method == 'sample_rds':
+        if 'sample_rds' in method:
             top_20_hat = get_importance_resample_top20_with_correction(
                 df,
                 mu,

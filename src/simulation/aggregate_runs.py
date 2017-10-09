@@ -4,6 +4,8 @@ Call from command line, point towards a folder
 python aggregate_runs.py -i /home/geb97/network-sampling/sim_output/stats -o /home/geb97/network-sampling/sim_output/dfs/output.tsv
 
 python aggregate_runs.py -i /home/geb97/network-sampling/sim_output/stats -o /mnt/md0/network_sampling_data/outfile.tsv
+
+python aggregate_runs.py -i /Users/g/Documents/network-sampling/stats -o /Users/g/Documents/network-sampling/dfs/output.tsv
 """
 import click
 import glob

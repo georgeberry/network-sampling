@@ -1,7 +1,9 @@
 library(tidyverse)
 
-viz_df = read_tsv('/Users/g/Documents/network-sampling/output.tsv') %>%
+# viz_df = read_tsv('/Users/g/Documents/network-sampling/output.tsv') %>%
+viz_df = read_tsv('/Users/g/Documents/network-sampling/dfs/output.tsv') %>%
   mutate(clf_err_corrected = ifelse(clf_err_corrected == 'True', TRUE, FALSE))
+  # filter(majority_size == 0.8, ingrp_pref_a == 0.8, ingrp_pref_b == 0.8)
 
 #### mse at sampling fraction ####################################################
 
@@ -16,7 +18,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # minority ingroup proportion
 viz_df %>%
@@ -27,7 +30,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # coleman's homophily for minority group
 viz_df %>%
@@ -38,7 +42,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # visibility of minority grouop
 viz_df %>%
@@ -49,7 +54,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 ######## uncorrected classifier error ############################################
 
@@ -62,7 +68,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # minority ingroup proportion
 viz_df %>%
@@ -73,7 +80,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # coleman's homophily for minority group
 viz_df %>%
@@ -84,7 +92,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # visibility of minority grouop
 viz_df %>%
@@ -95,7 +104,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 
 ######## corrected classifier error ##############################################
@@ -109,7 +119,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # minority ingroup proportion
 viz_df %>%
@@ -120,7 +131,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # coleman's homophily for minority group
 viz_df %>%
@@ -131,7 +143,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # visibility of minority grouop
 viz_df %>%
@@ -142,7 +155,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 
 #### Bias analysis ###############################################################
@@ -156,7 +170,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # minority ingroup proportion
 viz_df %>%
@@ -167,7 +182,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 # coleman's homophily for minority group
 viz_df %>%
@@ -178,7 +194,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 
 # visibility of minority group
@@ -190,7 +207,8 @@ viz_df %>%
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
   theme_bw() +
-  facet_grid(~ method)
+  facet_grid(~ method) +
+  lims(y=c(-0.4, 0.4))
 
 
 #### Compare RDS to ideal variance given by either edge or node sampling #########
