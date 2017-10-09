@@ -353,7 +353,7 @@ if __name__ == '__main__':
     print(chunk)
 
     num_nodes = [10000]
-    mean_degs = [2, 4]
+    mean_degs = [4] # [2, 4]
     homophily_vals = [
         (0.2, 0.2),
         (0.5, 0.5),

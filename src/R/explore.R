@@ -104,7 +104,7 @@ viz_df %>%
 viz_df %>%
   filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
   mutate(sampling_frac=samp_size/num_nodes,
-         err = m_b_crct - p_b) %>%
+         err = m_b - p_b) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -115,7 +115,7 @@ viz_df %>%
 viz_df %>%
   filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
   mutate(sampling_frac=samp_size/num_nodes,
-         err = m_bb_crct - p_bb) %>%
+         err = m_bb - p_bb) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -126,7 +126,7 @@ viz_df %>%
 viz_df %>%
   filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
   mutate(sampling_frac=samp_size/num_nodes,
-         err = h_b_hat_crct - h_b) %>%
+         err = h_b_hat - h_b) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -137,7 +137,7 @@ viz_df %>%
 viz_df %>%
   filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
   mutate(sampling_frac=samp_size/num_nodes,
-         err = top_20_hat_crct - top_20_true) %>%
+         err = top_20_hat - top_20_true) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -261,7 +261,7 @@ hom_df = left_join(rds_df, node_df, by=c('graph_idx', 'samp_idx')) %>%
 hom_df %>%
   group_by(kind) %>%
   summarize(mu = mean(value),
-            var = var(value))
+            sd = sqrt(var(value)))
 
 hom_df %>%
   ggplot(aes(x = factor(kind), y = value, color = factor(kind))) +

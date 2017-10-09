@@ -42,7 +42,7 @@ from rds import get_correct_top20
 #### Params ####################################################################
 INPUT_FILE = sys.argv[1]
 # INPUT_FILE = '/home/geb97/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
-print(INPUT_FILE)
+# print(INPUT_FILE)
 
 # OUTPUT_DIR = "/mnt/md0/network_sampling_data/sim_output/"
 OUTPUT_DIR = '/home/geb97/network-sampling/sim_output/stats/'
@@ -102,7 +102,7 @@ l_bb = true_link_grp_counts[('b','b')]
 p_aa = l_aa / (l_aa + l_ab + l_ba)
 p_bb = l_bb / (l_bb + l_ab + l_ba)
 
-print(p_aa, p_bb)
+# print(p_aa, p_bb)
 
 h_a, h_b = colemans_h(p_a, p_aa), colemans_h(p_b, p_bb)
 
@@ -222,12 +222,12 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
         ('h_b_hat', h_b_hat),
         ('top_20_hat', top_20_hat),
     ])
-    print('Finished {} {} {} {}'.format(
-        samp_idx,
-        sample_size,
-        sampling_method,
-        p_misclassify)
-    )
+    # print('Finished {} {} {} {}'.format(
+    #     samp_idx,
+    #     sample_size,
+    #     sampling_method,
+    #     p_misclassify)
+    # )
     # Included in g.graph['params']:
     # num_nodes, mean_degree, h_a, h_b, majority_size, idx
     record.update(gg.graph['params'])
