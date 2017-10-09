@@ -40,8 +40,8 @@ from rds import get_importance_resample_top20_with_correction
 from rds import get_correct_top20
 
 #### Params ####################################################################
-# INPUT_FILE = sys.argv[1]
-INPUT_FILE = '/home/geb97/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
+INPUT_FILE = sys.argv[1]
+# INPUT_FILE = '/home/geb97/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
 print(INPUT_FILE)
 
 # OUTPUT_DIR = "/mnt/md0/network_sampling_data/sim_output/"
