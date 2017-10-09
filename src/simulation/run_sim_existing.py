@@ -47,8 +47,8 @@ INPUT_FILE = sys.argv[1]
 # INPUT_FILE = '/home/geb97/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
 # print(INPUT_FILE)
 
-OUTPUT_DIR = '/Users/g/Documents/network-sampling/'
-# OUTPUT_DIR = '/home/geb97/network-sampling/sim_output/stats/'
+# OUTPUT_DIR = '/Users/g/Documents/network-sampling/'
+OUTPUT_DIR = '/home/geb97/network-sampling/sim_output/stats/'
 OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 
 # Total number of lines given by:
