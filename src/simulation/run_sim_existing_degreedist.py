@@ -10,7 +10,7 @@ find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_exi
 # Sampling methods
 from rds import sample_edges, sample_nodes, sample_ego_networks
 from rds import sample_rds, sample_snowball, population
-from rds import sample_reweighted
+from rds import sample_rds
 
 from rds import top_20pct, top_20pct_true
 from rds import node_statistic_grp_deg
@@ -46,8 +46,7 @@ for samp_idx in range(SAMPLES_PER_GRAPH):
 		'sample_edges':sample_edges,
 		'sample_nodes':sample_nodes,
 		'sample_ego_networks':sample_ego_networks,
-		'sample_random_walk':sample_rds,
-		'sample_RWRW': sample_reweighted,
+		'sample_rds': sample_rds,
 		'sample_snowball':sample_snowball
 	}
 	for method, fn in sampling_methods.items():

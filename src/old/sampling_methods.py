@@ -206,11 +206,14 @@ def population(g):
     link_counts = {
         ('a', 'a'): 0,
         ('a', 'b'): 0,
-        ('b', 'b'): 0,
         ('b', 'a'): 0,
     }
     for n1, n2 in g.edges_iter():
-        link_counts[(g.node[n1]['group'], g.node[n2]['group'])] += 1
+        edge_sorted_by_grp = tuple(sorted([
+            g.node[n1]['group'],
+            g.node[n2]['group'],
+        ]))
+        link_counts[edge_sorted_by_grp] += 1
     for idx, attr in g.nodes_iter(data=True):
         node_counts[attr['group']] += 1
     while True:

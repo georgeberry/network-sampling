@@ -31,22 +31,22 @@ Check out `src/old_sampling_code.py` for some old and messy code that does a bad
 ## Sampling methods
 1. Edge
 1. Node
-1. Ego network
 1. Snowball
 1. RDS
 
-##
+## Summary
 
-This gives 3 parmeters, 3 network types, and 5 sampling methods for a total of 45 analyses
+This gives 3 parmeters, 3 network types, and 4 sampling methods for a total of 45 analyses
 
 This is too many
 
-We are going to do the full gamut for the 5 sampling methods on the simulated parameter space.
+We are going to do the full gamut for the 4 sampling methods on the simulated parameter space.
 
 What will these plots look like?
 
 ## Types of plots to make
-1. Accuracy at sampling fraction for simulated graphs and 5 sampling methods
-1. Accuracy at sampling fraction with correction for simulated graphs and 5 sampling methods
-1. Bias for a fixed sampling size (1000 nodes) for simulated graphs with 5 sampling methods
-1. Bias for a fixed sampling size (1000 nodes) for simulated graphs with 5 sampling methods with correction
+1. Accuracy at sampling fraction for simulated graphs, 4 sampling methods, with and without correction for classifier error
+1. Bias for a fixed sampling size (1000 nodes)
+1. Compare RDS to ideal variance given by node or edge sampling for the given task
+1. Comparison with and without correction for classifier error
+1. Ratio between error & variance for no-clf-error with the corrected version
