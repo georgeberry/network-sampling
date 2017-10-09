@@ -9,7 +9,7 @@ import collections
 
 """
 Run this:
-    find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_existing.py
+    find /home/geb97/network-sampling/sim_output/graphs -type f | parallel python run_sim_existing.py
 
 To test: python run_sim_existing.py /home/geb97/network-sampling/sim_output/graphs/10000_2_0.2_0.2_0.5_0.p
 
