@@ -103,12 +103,12 @@ l_ab = true_link_grp_counts[('a','b')]
 l_ba = true_link_grp_counts[('b','a')]
 l_bb = true_link_grp_counts[('b','b')]
 
-p_aa = l_aa / (l_aa + l_ab + l_ba)
-p_bb = l_bb / (l_bb + l_ab + l_ba)
+s_aa = l_aa / (l_aa + l_ab + l_ba)
+s_bb = l_bb / (l_bb + l_ab + l_ba)
 
-# print(p_aa, p_bb)
+# print(s_aa, s_bb)
 
-h_a, h_b = colemans_h(p_a, p_aa), colemans_h(p_b, p_bb)
+h_a, h_b = colemans_h(p_a, s_aa), colemans_h(p_b, s_bb)
 
 #### Set up sim space and run ##################################################
 
@@ -152,17 +152,17 @@ The strategy is to minimize the amount of additional work that needs to
     the paper.
 
 Conventions:
-    m_aa or m_a for the measured proportions
-    p_aa_hat or p_a_hat for the estimated after correction
-    p_aa or p_a for the true values
+    t_aa or m_a for the measured proportions
+    s_aa_hat or p_a_hat for the estimated after correction
+    s_aa or p_a for the true values
     l_aa_hat for raw counts from the crawl
 
 For misclassify probs: we make a deepcopy of g and operate on that
 Fixes directly applied to:
     - m_a
     - m_b
-    - m_aa
-    - m_bb
+    - t_aa
+    - t_bb
 """
 
 for samp_idx, sample_size, sampling_method, p_misclassify in space:
@@ -208,11 +208,11 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
 
     top_20_hat = get_top_20pct(df)
 
-    m_aa = l_aa_hat / (l_aa_hat + l_ab_hat + l_ba_hat)
-    m_bb = l_bb_hat / (l_bb_hat + l_ab_hat + l_ba_hat)
+    t_aa = l_aa_hat / (l_aa_hat + l_ab_hat + l_ba_hat)
+    t_bb = l_bb_hat / (l_bb_hat + l_ab_hat + l_ba_hat)
 
-    h_a_hat = colemans_h(m_a, m_aa)
-    h_b_hat = colemans_h(m_b, m_bb)
+    h_a_hat = colemans_h(m_a, t_aa)
+    h_b_hat = colemans_h(m_b, t_bb)
 
     # We need to convert all of this data into one record
     record = collections.OrderedDict([
@@ -227,8 +227,8 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
         # true values
         ('p_a', p_a),
         ('p_b', p_b),
-        ('p_aa', p_aa),
-        ('p_bb', p_bb),
+        ('s_aa', s_aa),
+        ('s_bb', s_bb),
         ('top_20_true', true_top_20pct_minority_grp),
         ('h_a', h_a),
         ('h_b', h_b),
@@ -236,8 +236,8 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
         # estimates
         ('m_a', m_a),
         ('m_b', m_b),
-        ('m_aa', m_aa),
-        ('m_bb', m_bb),
+        ('t_aa', t_aa),
+        ('t_bb', t_bb),
         ('h_a_hat', h_a_hat),
         ('h_b_hat', h_b_hat),
         ('top_20_hat', top_20_hat),
@@ -278,19 +278,19 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
                 p_misclassify,
             )
 
-        m_aa = l_aa_hat / (l_aa_hat + l_ab_hat + l_ba_hat)
-        m_bb = l_bb_hat / (l_bb_hat + l_ab_hat + l_ba_hat)
+        t_aa = l_aa_hat / (l_aa_hat + l_ab_hat + l_ba_hat)
+        t_bb = l_bb_hat / (l_bb_hat + l_ab_hat + l_ba_hat)
 
-        h_a_hat = colemans_h(m_a, m_aa)
-        h_b_hat = colemans_h(m_b, m_bb)
+        h_a_hat = colemans_h(m_a, t_aa)
+        h_b_hat = colemans_h(m_b, t_bb)
 
         # update and save record
         record = deepcopy(record)
         record['clf_err_corrected'] = True
         record['m_a'] = m_a
         record['m_b'] = m_b
-        record['m_aa'] = m_aa
-        record['m_bb'] = m_bb
+        record['t_aa'] = t_aa
+        record['t_bb'] = t_bb
         record['h_a_hat'] = h_a_hat
         record['h_b_hat'] = h_b_hat
         record['top_20_hat'] = top_20_hat
