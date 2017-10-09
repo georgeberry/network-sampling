@@ -1,9 +1,9 @@
 library(tidyverse)
 
-# viz_df = read_tsv('/Users/g/Documents/network-sampling/output.tsv') %>%
-viz_df = read_tsv('/Users/g/Documents/network-sampling/dfs/output.tsv') %>%
-  mutate(clf_err_corrected = ifelse(clf_err_corrected == 'True', TRUE, FALSE))
-  # filter(majority_size == 0.8, ingrp_pref_a == 0.8, ingrp_pref_b == 0.8)
+viz_df = read_tsv('/Users/g/Documents/network-sampling/output.tsv') %>%
+# viz_df = read_tsv('/Users/g/Documents/network-sampling/dfs/output.tsv') %>%
+  mutate(clf_err_corrected = ifelse(clf_err_corrected == 'True', TRUE, FALSE)) %>%
+  filter(majority_size == 0.65, ingrp_pref_a == 0.8, ingrp_pref_b == 0.8)
 
 #### mse at sampling fraction ####################################################
 
@@ -287,3 +287,72 @@ hom_df %>%
   geom_boxplot() +
   theme_bw()
   
+
+####
+
+
+# Comapre variance for sampling nodes
+viz_df %>%
+  filter(p_misclassify > 0.0,
+         clf_err_corrected == FALSE,
+         samp_size == 1000,
+         method %in% c('sample_rds', 'sample_nodes')) %>%
+  mutate(err = m_a - p_a) %>%
+  group_by(method) %>%
+  summarize(v = var(err))
+
+# Comapre variance for sampling edges
+viz_df %>%
+  filter(p_misclassify == 0.0,
+         clf_err_corrected == FALSE,
+         samp_size == 1000,
+         method %in% c('sample_rds', 'sample_edges')) %>%
+  mutate(err = m_a - p_a) %>%
+  group_by(method) %>%
+  summarize(v = var(err))
+
+
+# Comapre variance for homophily, using node sample for proportion estimate
+# and edge sampling for edge estimate
+rds_df = viz_df %>%
+  filter(p_misclassify > 0.0,
+         clf_err_corrected == TRUE,
+         samp_size == 1000,
+         method %in% c('sample_rds')) %>%
+  select(graph_idx, samp_idx, h_b_hat, h_b)
+
+node_df = viz_df %>%
+  filter(p_misclassify > 0.0,
+         clf_err_corrected == TRUE,
+         samp_size == 1000,
+         method %in% c('sample_nodes')) %>%
+  select(graph_idx, samp_idx, m_b)
+
+edge_df = viz_df %>%
+  filter(p_misclassify > 0.0,
+         clf_err_corrected == TRUE,
+         samp_size == 1000,
+         method %in% c('sample_edges')) %>%
+  select(graph_idx, samp_idx, m_bb)
+
+hom_df = left_join(rds_df, node_df, by=c('graph_idx', 'samp_idx')) %>%
+  left_join(., edge_df, by=c('graph_idx', 'samp_idx')) %>%
+  rowwise() %>%
+  mutate(h_b_hat_comparison = ColemanH(m_b, m_bb),
+         rds_err = h_b_hat - h_b,
+         comparison_err = h_b_hat_comparison - h_b) %>%
+  ungroup() %>%
+  select(rds_err,
+         comparison_err) %>%
+  gather(kind, value, rds_err, comparison_err)
+
+hom_df %>%
+  group_by(kind) %>%
+  summarize(mu = mean(value),
+            sd = sqrt(var(value)))
+
+hom_df %>%
+  ggplot(aes(x = factor(kind), y = value, color = factor(kind))) +
+  geom_hline(yintercept=0, linetype='dashed') +
+  geom_boxplot() +
+  theme_bw()
