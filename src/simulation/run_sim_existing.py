@@ -10,9 +10,9 @@ import math
 
 """
 Run this:
-    find /home/geb97/network-sampling/sim_output/graphs -type f | parallel python run_sim_existing.py
+    find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_existing.py
 
-To test: python run_sim_existing.py /home/geb97/network-sampling/sim_output/graphs/10000_2_0.2_0.2_0.5_0.p
+To test: python run_sim_existing.py /mnt/md0/network_sampling_data/network-sampling/sim_output/graphs/10000_2_0.2_0.2_0.5_0.p
 
 To test locally: python run_sim_existing.py /Users/g/Documents/network-sampling/graphs/10000_2_0.2_0.2_0.5_0.p
 
@@ -44,16 +44,16 @@ from rds import get_correct_top20
 
 #### Params ####################################################################
 INPUT_FILE = sys.argv[1]
-# INPUT_FILE = '/home/geb97/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
+# INPUT_FILE = '/mnt/md0/network_sampling_data/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
 # print(INPUT_FILE)
 
 # OUTPUT_DIR = '/Users/g/Documents/network-sampling/'
-OUTPUT_DIR = '/home/geb97/network-sampling/sim_output/stats/'
+OUTPUT_DIR = '/mnt/md0/network_sampling_data/stats/'
 OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 
 # Total number of lines given by:
 # N_GRAPHS * SAMPLES_PER_GRAPH * len(SAMPLE_SIZE_INCREMENTS) * num sampling methods
-SAMPLES_PER_GRAPH = 50
+SAMPLES_PER_GRAPH = 10
 SAMPLE_SIZE = 2500 # 25% of simulation graphs
 INCREMENT_SIZE = 500
 SAMPLE_SIZE_INCREMENTS = np.arange(
