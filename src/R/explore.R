@@ -25,7 +25,7 @@ viz_df %>%
 viz_df %>%
   filter(p_misclassify == 0, clf_err_corrected == FALSE) %>%
   mutate(sampling_frac=samp_size/num_nodes,
-         err = m_bb - p_bb) %>%
+         err = t_bb - s_bb) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -75,7 +75,7 @@ viz_df %>%
 viz_df %>%
   filter(p_misclassify > 0, clf_err_corrected == FALSE) %>%
   mutate(sampling_frac=samp_size/num_nodes,
-         err = m_bb - p_bb) %>%
+         err = t_bb - s_bb) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -126,7 +126,7 @@ viz_df %>%
 viz_df %>%
   filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
   mutate(sampling_frac=samp_size/num_nodes,
-         err = m_bb - p_bb) %>%
+         err = t_bb - s_bb) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
   geom_boxplot() +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -176,7 +176,7 @@ viz_df %>%
 # minority ingroup proportion
 viz_df %>%
   filter(samp_size == 1000) %>%
-  mutate(err = m_bb - p_bb,
+  mutate(err = t_bb - s_bb,
          category = paste(p_misclassify, clf_err_corrected)) %>%
   ggplot(aes(x=factor(category), y=err)) +
   geom_boxplot() +
@@ -263,12 +263,12 @@ edge_df = viz_df %>%
          clf_err_corrected == FALSE,
          samp_size == 1000,
          method %in% c('sample_edges')) %>%
-  select(graph_idx, samp_idx, m_bb)
+  select(graph_idx, samp_idx, t_bb)
 
 hom_df = left_join(rds_df, node_df, by=c('graph_idx', 'samp_idx')) %>%
   left_join(., edge_df, by=c('graph_idx', 'samp_idx')) %>%
   rowwise() %>%
-  mutate(h_b_hat_comparison = ColemanH(m_b, m_bb),
+  mutate(h_b_hat_comparison = ColemanH(m_b, t_bb),
          rds_err = h_b_hat - h_b,
          comparison_err = h_b_hat_comparison - h_b) %>%
   ungroup() %>%
@@ -333,12 +333,12 @@ edge_df = viz_df %>%
          clf_err_corrected == TRUE,
          samp_size == 1000,
          method %in% c('sample_edges')) %>%
-  select(graph_idx, samp_idx, m_bb)
+  select(graph_idx, samp_idx, t_bb)
 
 hom_df = left_join(rds_df, node_df, by=c('graph_idx', 'samp_idx')) %>%
   left_join(., edge_df, by=c('graph_idx', 'samp_idx')) %>%
   rowwise() %>%
-  mutate(h_b_hat_comparison = ColemanH(m_b, m_bb),
+  mutate(h_b_hat_comparison = ColemanH(m_b, t_bb),
          rds_err = h_b_hat - h_b,
          comparison_err = h_b_hat_comparison - h_b) %>%
   ungroup() %>%

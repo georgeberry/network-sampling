@@ -10,7 +10,7 @@ import math
 
 """
 Run this:
-    find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_existing.py
+find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_existing.py
 
 To test: python run_sim_existing.py /mnt/md0/network_sampling_data/network-sampling/sim_output/graphs/10000_2_0.2_0.2_0.5_0.p
 
@@ -54,7 +54,7 @@ OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 # Total number of lines given by:
 # N_GRAPHS * SAMPLES_PER_GRAPH * len(SAMPLE_SIZE_INCREMENTS) * num sampling methods
 SAMPLES_PER_GRAPH = 10
-SAMPLE_SIZE = 2500 # 25% of simulation graphs
+SAMPLE_SIZE = 3000 # 25% of simulation graphs
 INCREMENT_SIZE = 500
 SAMPLE_SIZE_INCREMENTS = np.arange(
     start=INCREMENT_SIZE,
@@ -183,18 +183,20 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
         if method == 'sample_rds_double':
             df, crosslink_dict = fn(
                 gg,
-                math.floor(sample_size / 2),
+                sample_size,
                 node_statistic_grp_b,
             )
             m_b = rds_estimate(df, 'group')
             m_a = 1 - m_b
             df, crosslink_dict = fn(
                 gg,
-                math.floor(sample_size / 2),
+                sample_size,
                 node_statistic_grp_b,
             )
             mu = rds_estimate(df, 'degree')
             df = boot_with_attr(df, mu, n=20000)
+
+            sample_size = 2 * sample_size
     else:
         df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
         # janky: assume node stat is group b
