@@ -50,7 +50,5 @@ What will these plots look like?
 1. Compare RDS to ideal variance given by node or edge sampling for the given task
 1. Comparison with and without correction for classifier error
 1. Ratio between error & variance for no-clf-error with the corrected version
-
-
-
-look at all sampling methods on the 3 different tasks for 1 graph and 1 sample size
+1. f(err) for homophily as we increase misclassification probability
+1. do an actual two-sample where use a node and edge sample within to get an ideal lower bound of variance

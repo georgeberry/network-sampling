@@ -80,12 +80,15 @@ sampling_methods = {
     # 'sample_ego_networks':sample_ego_networks,
     'sample_rds': sample_rds,
     # 'sample_rds_double': sample_rds,
-    'sample_snowball':sample_snowball,
+    'sample_snowball': sample_snowball,
+    'sample_ideal': (sample_nodes, sample_edges),
 }
 
 misclassification_probs = [
     0.0,
+    0.1,
     0.2,
+    0.3,
 ]
 
 #### Get true values for graph #################################################
@@ -197,6 +200,20 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
             df = boot_with_attr(df, mu, n=20000)
 
             sample_size = 2 * sample_size
+    elif method == 'sample_ideal':
+        fn_node, fn_edge = fn
+        df, _ = fn_node(
+            gg,
+            sample_size,
+            node_statistic_grp_b,
+        )
+        m_b = df.group.mean()
+        m_a = 1 - df.group.mean()
+        _, crosslink_dict = fn_edge(
+            gg,
+            sample_size,
+            node_statistic_grp_b,
+        )
     else:
         df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
         # janky: assume node stat is group b
@@ -208,6 +225,7 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
     l_ba_hat = crosslink_dict[('b','a')]
     l_bb_hat = crosslink_dict[('b','b')]
 
+    # for sample_ideal this is done with nodes
     top_20_hat = get_top_20pct(df)
 
     t_aa = l_aa_hat / (l_aa_hat + l_ab_hat + l_ba_hat)

@@ -73,7 +73,6 @@ viz_df = read_tsv('/Users/g/Documents/network-sampling/output.tsv') %>%
 levels(viz_df$method) = c("Edge Sample",
                           "Node Sample",
                           "RDS",
-                          "Sample RDS Double",
                           "Snowball Sample")
 
 levels(viz_df$category) = c("No clf error",
@@ -92,7 +91,7 @@ p1 = viz_df %>%
   geom_boxplot() +
   theme_bw() +
   facet_grid(~ method) +
-  stat_summary(fun.y='mean', geom='point', color='black')
+  stat_summary(fun.y='mean', geom='point', color='black') +
   lims(y=c(-0.4, 0.4))
   
 # minority ingroup proportion
@@ -104,10 +103,12 @@ p2 = viz_df %>%
   geom_boxplot() +
   theme_bw() +
   facet_grid(~ method) +
-  stat_summary(fun.y='mean', geom='point', color='black')
+  stat_summary(fun.y='mean', geom='point', color='black') +
   lims(y=c(-0.4, 0.4))
 
+# save manually, 11 by 6
 mp1 = multiplot(p1, p2, cols=1)
+
 
 # coleman's homophily for minority group
 p3 = viz_df %>%
@@ -118,8 +119,12 @@ p3 = viz_df %>%
   geom_boxplot() +
   theme_bw() +
   facet_grid(~ method) +
-  stat_summary(fun.y='mean', geom='point', color='black')
+  stat_summary(fun.y='mean', geom='point', color='black') +
   lims(y=c(-0.6, 0.6))
+ggsave("/Users/g/Documents/network-sampling/plots/p3.pdf",
+       p3,
+       width=11,
+       height=3)
 
 # for a table
 xtable(
@@ -127,7 +132,7 @@ xtable(
     mutate(err = h_b_hat - h_b) %>%
     group_by(method, category) %>%
     summarize(mu = median(err),
-              sigma_2 = var(err)) %>%
+              sigma = sqrt(var(err))) %>%
     arrange(category, method),
   digits=c(0,0,0, 3, 3))
 
@@ -141,149 +146,39 @@ p4 = viz_df %>%
   theme_bw() +
   facet_grid(~ method) +
   lims(y=c(-0.4, 0.4))
+ggsave("/Users/g/Documents/network-sampling/plots/p4.pdf",
+       p4,
+       width=11,
+       height=3)
 
 
-#### mse at sampling fraction ####################################################
+#### err at sampling fraction ####################################################
 
-######## no classifier error #####################################################
-
-# minority group proportion
-viz_df %>%
-  filter(p_misclassify == 0, clf_err_corrected == FALSE) %>%
-  mutate(err = m_b - p_b) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
-  geom_hline(yintercept=0, linetype='dashed') +
-  theme_bw() +
-  facet_grid(~ method) +
-  lims(y=c(-0.1, 0.1))
-
-# minority ingroup proportion
-viz_df %>%
-  filter(p_misclassify == 0, clf_err_corrected == FALSE) %>%
-  mutate(err = t_bb - s_bb) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
-  geom_hline(yintercept=0, linetype='dashed') +
-  theme_bw() +
-  facet_grid(~ method) +
-  lims(y=c(-0.1, 0.1))
-
-# coleman's homophily for minority group
-viz_df %>%
-  filter(p_misclassify == 0, clf_err_corrected == FALSE) %>%
-  mutate(err = h_b_hat - h_b) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
-  geom_hline(yintercept=0, linetype='dashed') +
-  theme_bw() +
-  facet_grid(~ method) +
-  lims(y=c(-0.1, 0.1))
-
-# visibility of minority grouop
-viz_df %>%
-  filter(p_misclassify == 0, clf_err_corrected == FALSE) %>%
-  mutate(err = top_20_hat - top_20_true) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
-  geom_hline(yintercept=0, linetype='dashed') +
-  theme_bw() +
-  facet_grid(~ method) +
-  lims(y=c(-0.1, 0.1))
-
-######## uncorrected classifier error ############################################
-
-# minority group proportion
-viz_df %>%
-  filter(p_misclassify > 0, clf_err_corrected == FALSE) %>%
-  mutate(err = m_b - p_b) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
-  geom_hline(yintercept=0, linetype='dashed') +
-  theme_bw() +
-  facet_grid(~ method) +
-  lims(y=c(-0.3, 0.3))
-
-# minority ingroup proportion
-viz_df %>%
-  filter(p_misclassify > 0, clf_err_corrected == FALSE) %>%
-  mutate(err = t_bb - s_bb) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
-  geom_hline(yintercept=0, linetype='dashed') +
-  theme_bw() +
-  facet_grid(~ method) +
-  lims(y=c(-0.4, 0.4))
-
-# coleman's homophily for minority group
-viz_df %>%
-  filter(p_misclassify > 0, clf_err_corrected == FALSE) %>%
-  mutate(err = h_b_hat - h_b) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
-  geom_hline(yintercept=0, linetype='dashed') +
-  theme_bw() +
-  facet_grid(~ method) +
-  lims(y=c(-0.4, 0.4))
-
-# visibility of minority grouop
-viz_df %>%
-  filter(p_misclassify > 0, clf_err_corrected == FALSE) %>%
-  mutate(err = top_20_hat - top_20_true) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
-  geom_hline(yintercept=0, linetype='dashed') +
-  theme_bw() +
-  facet_grid(~ method) +
-  lims(y=c(-0.4, 0.4))
-
-
-######## corrected classifier error ##############################################
-
-# minority group proportion
-viz_df %>%
-  filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
-  mutate(err = m_b - p_b) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
-  geom_hline(yintercept=0, linetype='dashed') +
-  theme_bw() +
-  facet_grid(~ method) +
-  lims(y=c(-0.4, 0.4))
-
-# minority ingroup proportion
-viz_df %>%
-  filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
-  mutate(err = t_bb - s_bb) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
-  geom_hline(yintercept=0, linetype='dashed') +
-  theme_bw() +
-  facet_grid(~ method) +
-  lims(y=c(-0.4, 0.4))
-
-# coleman's homophily for minority group
-viz_df %>%
+p5 = viz_df %>%
   filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
   mutate(err = h_b_hat - h_b) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
+  ggplot(aes(x=factor(sampling_frac), y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
+  geom_boxplot() +
   theme_bw() +
   facet_grid(~ method) +
-  lims(y=c(-0.4, 0.4))
+  stat_summary(fun.y='mean', geom='point', color='black') +
+  lims(y=c(-0.2, 0.2))
 
 # visibility of minority grouop
-viz_df %>%
+p6 = viz_df %>%
   filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
   mutate(err = top_20_hat - top_20_true) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=factor(method))) +
-  geom_boxplot() +
+  ggplot(aes(x=factor(sampling_frac), y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
+  geom_boxplot() +
   theme_bw() +
   facet_grid(~ method) +
-  lims(y=c(-0.4, 0.4))
+  stat_summary(fun.y='mean', geom='point', color='black') +
+  lims(y=c(-0.2, 0.2))
 
+# save manually, 11 by 6
+mp2 = multiplot(p5, p6, cols=1)
 
 
 #### Compare RDS to ideal variance given by either edge or node sampling #########
@@ -300,7 +195,6 @@ ColemanH = function(p_a, p_aa) {
 viz_df %>%
   filter(p_misclassify == 0.0,
          clf_err_corrected == FALSE,
-         samp_size == 1000,
          method %in% c('sample_rds', 'sample_nodes')) %>%
   mutate(err = m_a - p_a) %>%
   group_by(method) %>%
@@ -310,7 +204,6 @@ viz_df %>%
 viz_df %>%
   filter(p_misclassify == 0.0,
          clf_err_corrected == FALSE,
-         samp_size == 1000,
          method %in% c('sample_rds', 'sample_edges')) %>%
   mutate(err = m_a - p_a) %>%
   group_by(method) %>%
@@ -322,28 +215,25 @@ viz_df %>%
 rds_df = viz_df %>%
   filter(p_misclassify == 0.0,
          clf_err_corrected == FALSE,
-         samp_size == 1000,
          method %in% c('sample_rds')) %>%
   select(graph_idx, samp_idx, h_b_hat, h_b)
 
 node_df = viz_df %>%
   filter(p_misclassify == 0.0,
          clf_err_corrected == FALSE,
-         samp_size == 1000,
          method %in% c('sample_nodes')) %>%
   select(graph_idx, samp_idx, m_b)
 
 edge_df = viz_df %>%
   filter(p_misclassify == 0.0,
          clf_err_corrected == FALSE,
-         samp_size == 1000,
          method %in% c('sample_edges')) %>%
   select(graph_idx, samp_idx, t_bb)
 
 hom_df = left_join(rds_df, node_df, by=c('graph_idx', 'samp_idx')) %>%
   left_join(., edge_df, by=c('graph_idx', 'samp_idx')) %>%
   rowwise() %>%
-  mutate(h_b_hat_comparison = ColemanH(m_b, t_bb),
+  mutate(h_b_hat_comparison = winsor1(ColemanH(m_b, t_bb)),
          rds_err = h_b_hat - h_b,
          comparison_err = h_b_hat_comparison - h_b) %>%
   ungroup() %>%
@@ -362,74 +252,3 @@ hom_df %>%
   geom_boxplot() +
   theme_bw()
   
-
-####
-
-
-# Comapre variance for sampling nodes
-viz_df %>%
-  filter(p_misclassify > 0.0,
-         clf_err_corrected == FALSE,
-         samp_size == 1000,
-         method %in% c('sample_rds', 'sample_nodes')) %>%
-  mutate(err = m_a - p_a) %>%
-  group_by(method) %>%
-  summarize(v = var(err))
-
-# Comapre variance for sampling edges
-viz_df %>%
-  filter(p_misclassify == 0.0,
-         clf_err_corrected == FALSE,
-         samp_size == 1000,
-         method %in% c('sample_rds', 'sample_edges')) %>%
-  mutate(err = m_a - p_a) %>%
-  group_by(method) %>%
-  summarize(v = var(err))
-
-
-#### Ideal homophily analysis ####################################################
-
-# Comapre variance for homophily, using node sample for proportion estimate
-# and edge sampling for edge estimate
-rds_df = viz_df %>%
-  filter(p_misclassify > 0.0,
-         clf_err_corrected == TRUE,
-         samp_size == 1000,
-         method %in% c('sample_rds')) %>%
-  select(graph_idx, samp_idx, h_b_hat, h_b)
-
-node_df = viz_df %>%
-  filter(p_misclassify > 0.0,
-         clf_err_corrected == TRUE,
-         samp_size == 1000,
-         method %in% c('sample_nodes')) %>%
-  select(graph_idx, samp_idx, m_b)
-
-edge_df = viz_df %>%
-  filter(p_misclassify > 0.0,
-         clf_err_corrected == TRUE,
-         samp_size == 1000,
-         method %in% c('sample_edges')) %>%
-  select(graph_idx, samp_idx, t_bb)
-
-hom_df = left_join(rds_df, node_df, by=c('graph_idx', 'samp_idx')) %>%
-  left_join(., edge_df, by=c('graph_idx', 'samp_idx')) %>%
-  rowwise() %>%
-  mutate(h_b_hat_comparison = ColemanH(m_b, t_bb),
-         rds_err = h_b_hat - h_b,
-         comparison_err = h_b_hat_comparison - h_b) %>%
-  ungroup() %>%
-  select(rds_err,
-         comparison_err) %>%
-  gather(kind, value, rds_err, comparison_err)
-
-hom_df %>%
-  group_by(kind) %>%
-  summarize(mu = mean(value),
-            sd = sqrt(var(value)))
-
-hom_df %>%
-  ggplot(aes(x = factor(kind), y = value, color = factor(kind))) +
-  geom_hline(yintercept=0, linetype='dashed') +
-  geom_boxplot() +
-  theme_bw()
