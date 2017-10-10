@@ -104,14 +104,13 @@ def rds_estimate(rds_df, focal_column):
 
 def colemans_h(group_proportion, ingroup_link_proportion):
     p_x = group_proportion
+    p_xx = ingroup_link_proportion
 
     # handle p_x = 0 or 1
     if p_x >= 1:
-        return 0
+        return None
     elif p_x <= 0:
-        return 0
-
-    p_xx = ingroup_link_proportion
+        return None
 
     if p_xx >= p_x:
         return (p_xx - p_x) / (1 - p_x)
