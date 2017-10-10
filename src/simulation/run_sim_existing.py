@@ -79,13 +79,13 @@ sampling_methods = {
     'sample_nodes':sample_nodes,
     # 'sample_ego_networks':sample_ego_networks,
     'sample_rds': sample_rds,
-    'sample_rds_double': sample_rds,
+    # 'sample_rds_double': sample_rds,
     'sample_snowball':sample_snowball,
 }
 
 misclassification_probs = [
     0.0,
-    0.3,
+    0.2,
 ]
 
 #### Get true values for graph #################################################
