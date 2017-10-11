@@ -22,25 +22,25 @@ for analysis.
 """
 
 # Sampling methods
-from rds import sample_edges
-from rds import sample_nodes
-from rds import sample_rds
-from rds import sample_snowball
-from rds import population
+from sampling_procedures import sample_edges
+from sampling_procedures import sample_nodes
+from sampling_procedures import sample_rds
+from sampling_procedures import sample_snowball
+from sampling_procedures import population
 # Compute measures
-from rds import get_top_20pct
-from rds import get_true_top_20pct_minority_grp
-from rds import node_statistic_grp_b
-from rds import colemans_h
-from rds import rds_estimate
-from rds import boot_with_attr
+from sampling_procedures import get_top_20pct
+from sampling_procedures import get_true_top_20pct_minority_grp
+from sampling_procedures import node_statistic_grp_b
+from sampling_procedures import colemans_h
+from sampling_procedures import rds_estimate
+from sampling_procedures import boot_with_attr
 # Some other functions
-from rds import misclassify_nodes
+from sampling_procedures import misclassify_nodes
 # Correctors
-from rds import get_correct_group_proportions
-from rds import get_correct_crosslink_proportions
-from rds import get_importance_resample_top20_with_correction
-from rds import get_correct_top20
+from sampling_procedures import get_correct_group_proportions
+from sampling_procedures import get_correct_crosslink_proportions
+from sampling_procedures import get_importance_resample_top20_with_correction
+from sampling_procedures import get_correct_top20
 
 #### Params ####################################################################
 INPUT_FILE = sys.argv[1]

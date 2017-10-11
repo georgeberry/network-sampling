@@ -53,6 +53,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 #
 
 viz_df = read_tsv('/Users/g/Documents/network-sampling/output.tsv') %>%
+  filter(!is.na(h_b_hat)) %>%
 # viz_df = read_tsv('/Users/g/Documents/network-sampling/dfs/output.tsv') %>%
   mutate(clf_err_corrected = ifelse(clf_err_corrected == 'True', TRUE, FALSE),
          sampling_frac=samp_size/num_nodes,
@@ -73,7 +74,8 @@ viz_df = read_tsv('/Users/g/Documents/network-sampling/output.tsv') %>%
 levels(viz_df$method) = c("Edge Sample",
                           "Node Sample",
                           "RDS",
-                          "Snowball Sample")
+                          "Snowball Sample",
+                          "Sample Ideal")
 
 levels(viz_df$category) = c("No clf error",
                             "Clf error,\nno correction",
@@ -84,7 +86,7 @@ levels(viz_df$category) = c("No clf error",
 
 # minority group proportion
 p1 = viz_df %>%
-  filter(samp_size >= 1000) %>%
+  filter(method != "Sample Ideal", p_misclassify %in% c(0.0, 0.2)) %>%
   mutate(err = m_b - p_b) %>%
   ggplot(aes(x=category, y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -96,7 +98,7 @@ p1 = viz_df %>%
   
 # minority ingroup proportion
 p2 = viz_df %>%
-  filter(samp_size >= 1000) %>%
+  filter(method != "Sample Ideal", p_misclassify %in% c(0.0, 0.2)) %>%
   mutate(err = t_bb - s_bb) %>%
   ggplot(aes(x=category, y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -112,7 +114,7 @@ mp1 = multiplot(p1, p2, cols=1)
 
 # coleman's homophily for minority group
 p3 = viz_df %>%
-  filter(samp_size >= 1000) %>%
+  filter(method != "Sample Ideal", p_misclassify %in% c(0.0, 0.2)) %>%
   mutate(err = h_b_hat - h_b) %>%
   ggplot(aes(x=category, y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -138,7 +140,7 @@ xtable(
 
 # visibility of minority group
 p4 = viz_df %>%
-  filter(samp_size >= 1000) %>%
+  filter(method != "Sample Ideal", p_misclassify %in% c(0.0, 0.2)) %>%
   mutate(err = top_20_hat - top_20_true) %>%
   ggplot(aes(x=category, y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -155,7 +157,7 @@ ggsave("/Users/g/Documents/network-sampling/plots/p4.pdf",
 #### err at sampling fraction ####################################################
 
 p5 = viz_df %>%
-  filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
+  filter(p_misclassify == 0.2, clf_err_corrected == TRUE, method != "Sample Ideal") %>%
   mutate(err = h_b_hat - h_b) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -167,7 +169,7 @@ p5 = viz_df %>%
 
 # visibility of minority grouop
 p6 = viz_df %>%
-  filter(p_misclassify > 0, clf_err_corrected == TRUE) %>%
+  filter(p_misclassify == 0.2, clf_err_corrected == TRUE, method != "Sample Ideal") %>%
   mutate(err = top_20_hat - top_20_true) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -183,72 +185,12 @@ mp2 = multiplot(p5, p6, cols=1)
 
 #### Compare RDS to ideal variance given by either edge or node sampling #########
 
-ColemanH = function(p_a, p_aa) {
-  if (p_aa >= p_a) {
-    return((p_aa - p_a) / (1 - p_a))
-  } else if (p_aa < p_a) {
-    return((p_aa - p_a) / p_a)
-  }
-}
-
-# Comapre variance for sampling nodes
 viz_df %>%
-  filter(p_misclassify == 0.0,
-         clf_err_corrected == FALSE,
-         method %in% c('sample_rds', 'sample_nodes')) %>%
-  mutate(err = m_a - p_a) %>%
-  group_by(method) %>%
-  summarize(v = var(err))
-  
-# Comapre variance for sampling edges
-viz_df %>%
-  filter(p_misclassify == 0.0,
-         clf_err_corrected == FALSE,
-         method %in% c('sample_rds', 'sample_edges')) %>%
-  mutate(err = m_a - p_a) %>%
-  group_by(method) %>%
-  summarize(v = var(err))
-
-
-# Comapre variance for homophily, using node sample for proportion estimate
-# and edge sampling for edge estimate
-rds_df = viz_df %>%
-  filter(p_misclassify == 0.0,
-         clf_err_corrected == FALSE,
-         method %in% c('sample_rds')) %>%
-  select(graph_idx, samp_idx, h_b_hat, h_b)
-
-node_df = viz_df %>%
-  filter(p_misclassify == 0.0,
-         clf_err_corrected == FALSE,
-         method %in% c('sample_nodes')) %>%
-  select(graph_idx, samp_idx, m_b)
-
-edge_df = viz_df %>%
-  filter(p_misclassify == 0.0,
-         clf_err_corrected == FALSE,
-         method %in% c('sample_edges')) %>%
-  select(graph_idx, samp_idx, t_bb)
-
-hom_df = left_join(rds_df, node_df, by=c('graph_idx', 'samp_idx')) %>%
-  left_join(., edge_df, by=c('graph_idx', 'samp_idx')) %>%
-  rowwise() %>%
-  mutate(h_b_hat_comparison = winsor1(ColemanH(m_b, t_bb)),
-         rds_err = h_b_hat - h_b,
-         comparison_err = h_b_hat_comparison - h_b) %>%
-  ungroup() %>%
-  select(rds_err,
-         comparison_err) %>%
-  gather(kind, value, rds_err, comparison_err)
-
-hom_df %>%
-  group_by(kind) %>%
-  summarize(mu = mean(value),
-            sd = sqrt(var(value)))
-
-hom_df %>%
-  ggplot(aes(x = factor(kind), y = value, color = factor(kind))) +
+  filter(method %in% c('RDS', 'Sample Ideal')) %>%
+  mutate(err = h_b_hat - h_b) %>%
+  ggplot(aes(x = category, y = err, color = factor(method))) +
   geom_hline(yintercept=0, linetype='dashed') +
   geom_boxplot() +
-  theme_bw()
+  theme_bw() +
+  facet_grid(~ method)
   
