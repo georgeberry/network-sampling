@@ -146,7 +146,8 @@ def population(g):
     }
     for n1, n2 in g.edges_iter():
         grp1, grp2 = g.node[n1]['group'], g.node[n2]['group']
-        link_counts[tuple(sorted((grp1, grp2)))] += 1
+        sorted_edge_grps = tuple(sorted((grp1, grp2)))
+        link_counts[sorted_edge_grps] += 1
     for idx, attr in g.nodes_iter(data=True):
         node_counts[attr['group']] += 1
     return node_counts, link_counts
