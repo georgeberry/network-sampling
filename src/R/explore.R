@@ -198,3 +198,26 @@ viz_df %>%
 
 #### Covariance to check unbiasedness ############################################
 
+# t_a = ties from a to a
+# m_a = size of group a
+
+viz_df %>%
+  filter(method == 'RDS', p_misclassify <= 0.2) %>%
+  summarize(cov(t_aa, m_a))
+
+viz_df %>%
+  filter(method == 'RDS', p_misclassify <= 0.2) %>%
+  summarize(cov(t_bb, m_b))
+
+viz_df %>%
+  filter(method == 'RDS', p_misclassify <= 0.2) %>%
+  summarize(cov(t_bb, t_aa))
+
+viz_df %>%
+  filter(method == 'RDS', p_misclassify <= 0.2) %>%
+  summarize(cov(t_bb, t_aa))
+
+viz_df %>%
+  filter(method == 'RDS') %>%
+  group_by(p_misclassify) %>%
+  summarize()

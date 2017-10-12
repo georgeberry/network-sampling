@@ -251,6 +251,13 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
         ('h_a', h_a),
         ('h_b', h_b),
 
+        # raw sample values for cov analysis
+        ('m_a_raw', m_a),
+        ('m_b_raw', m_b),
+        ('t_aa_raw', l_aa_hat / (l_aa_hat + l_ab_hat + l_bb_hat),
+        ('t_ab_raw', l_ab_hat / (l_aa_hat + l_ab_hat + l_bb_hat),
+        ('t_bb_raw', l_bb_hat / (l_aa_hat + l_ab_hat + l_bb_hat),
+
         # estimates
         ('m_a', m_a),
         ('m_b', m_b),
