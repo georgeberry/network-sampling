@@ -65,7 +65,8 @@ def update_crosslink_dict(g, edge, crosslink_dict):
     n1, n2 = edge
     src_grp = g.node[n1]['group']
     dst_grp = g.node[n2]['group']
-    crosslink_dict[tuple(sorted((src_grp, dst_grp))] += 1
+    sorted_edge_grps = tuple(sorted((src_grp, dst_grp)))
+    crosslink_dict[sorted_edge_grps] += 1
 
 #### RDS functions #############################################################
 

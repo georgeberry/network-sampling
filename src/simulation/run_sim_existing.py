@@ -103,11 +103,10 @@ p_b = l_b / (l_a + l_b)
 
 l_aa = true_link_grp_counts[('a','a')]
 l_ab = true_link_grp_counts[('a','b')]
-l_ba = true_link_grp_counts[('b','a')]
 l_bb = true_link_grp_counts[('b','b')]
 
-s_aa = l_aa / (l_aa + l_ab + l_ba)
-s_bb = l_bb / (l_bb + l_ab + l_ba)
+s_aa = l_aa / (l_aa + l_ab)
+s_bb = l_bb / (l_bb + l_ab)
 
 # print(s_aa, s_bb)
 
@@ -222,14 +221,13 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
 
     l_aa_hat = crosslink_dict[('a','a')]
     l_ab_hat = crosslink_dict[('a','b')]
-    l_ba_hat = crosslink_dict[('b','a')]
     l_bb_hat = crosslink_dict[('b','b')]
 
     # for sample_ideal this is done with nodes
     top_20_hat = get_top_20pct(df)
 
-    t_aa = l_aa_hat / (l_aa_hat + l_ab_hat + l_ba_hat)
-    t_bb = l_bb_hat / (l_bb_hat + l_ab_hat + l_ba_hat)
+    t_aa = l_aa_hat / (l_aa_hat + l_ab_hat)
+    t_bb = l_bb_hat / (l_bb_hat + l_ab_hat)
 
     h_a_hat = colemans_h(m_a, t_aa)
     h_b_hat = colemans_h(m_b, t_bb)
@@ -278,11 +276,10 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
     # all measures appended with _crct
     if p_misclassify > 0:
         m_a, m_b = get_correct_group_proportions(m_a, m_b, p_misclassify)
-        l_aa_hat, l_ab_hat, l_ba_hat, l_bb_hat = \
+        l_aa_hat, l_ab_hat, l_bb_hat = \
             get_correct_crosslink_proportions(
                 l_aa_hat,
                 l_ab_hat,
-                l_ba_hat,
                 l_bb_hat,
                 p_misclassify,
         )
@@ -298,8 +295,8 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
                 p_misclassify,
             )
 
-        t_aa = l_aa_hat / (l_aa_hat + l_ab_hat + l_ba_hat)
-        t_bb = l_bb_hat / (l_bb_hat + l_ab_hat + l_ba_hat)
+        t_aa = l_aa_hat / (l_aa_hat + l_ab_hat)
+        t_bb = l_bb_hat / (l_bb_hat + l_ab_hat)
 
         h_a_hat = colemans_h(m_a, t_aa)
         h_b_hat = colemans_h(m_b, t_bb)
