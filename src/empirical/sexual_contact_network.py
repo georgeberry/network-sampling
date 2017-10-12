@@ -1,4 +1,9 @@
 """
+Run this to make the sexual contact network and save it
+Then run run_sim_existing.py pointing at it with 100 reps
+
+Males are the larger group so we assign male = a, female = b
+
 Data from:
   http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1001109
 
@@ -15,15 +20,6 @@ import pandas as pd
 
 import sys
 sys.path.append('..')
-
-from simulation.rds import *
-
-#### node statistic functions ##################################################
-
-def node_statistic_female(g, node):
-    if g.node[node]['gender'] == 'female':
-        return 1, ['gender']
-    return 0, ['gender']
 
 #### do the thing! #############################################################
 
@@ -48,32 +44,18 @@ edges = [
 
 node_to_gender_dict = {}
 for female, male in edges:
-    node_to_gender_dict[female] = 'female'
-    node_to_gender_dict[male] = 'male'
+    node_to_gender_dict[female] = 'b'
+    node_to_gender_dict[male] = 'a'
 
 g = nx.Graph()
 g.add_edges_from(edges)
-nx.set_node_attributes(g, 'gender', node_to_gender_dict)
+nx.set_node_attributes(g, 'group', node_to_gender_dict)
 nx.set_node_attributes(g, 'degree', g.degree())
+g.graph['params'] = {
+    'num_nodes': g.number_of_nodes(),
+    'homophily': [None, None],
+    'idx': None,
+}
 g = max(nx.connected_component_subgraphs(g), key=len)
 
-gender_sum = 0
-degree_sum = 0
-for _, attr in g.nodes_iter(data=True):
-    if attr['gender'] == 'female':
-        gender_sum += 1
-    degree_sum += attr['degree']
-
-print((
-    'True gender: {}'
-    'True degree: {}'.format(gender_sum / len(g), degree_sum / len(g))
-))
-
-rds_df = sample_rds(g, 1000, node_statistic_female)
-mu_gender = rds_estimate(rds_df, 'gender')
-mu_degree = rds_estimate(rds_df, 'degree')
-
-print((
-    'Estimated gender: {}'
-    'Estimated degree: {}'.format(mu_gender, mu_degree)
-))
+nx.write_gpickle(g, '../../data/sexual_contact/graph.p')

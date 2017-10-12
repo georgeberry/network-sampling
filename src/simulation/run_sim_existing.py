@@ -10,11 +10,17 @@ import math
 
 """
 Run this:
-find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_existing.py
+    find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_existing.py
 
-To test: python run_sim_existing.py /mnt/md0/network_sampling_data/network-sampling/sim_output/graphs/10000_2_0.2_0.2_0.5_0.p
+To test:
+    python run_sim_existing.py /mnt/md0/network_sampling_data/network-sampling/sim_output/graphs/10000_2_0.2_0.2_0.5_0.p
 
-To test locally: python run_sim_existing.py /Users/g/Documents/network-sampling/graphs/10000_2_0.2_0.2_0.5_0.p
+To test locally:
+    python run_sim_existing.py /Users/g/Documents/network-sampling/graphs/10000_2_0.2_0.2_0.5_0.p
+
+Run with sexual contact network
+    python run_sim_existing.py ../../data/sexual_contact/graph.p
+
 
 Requires GNU parallel. This file operates on one graph file and outputs one
 output file. Then, aggregate_runs.py joins them together into one big df
@@ -53,7 +59,7 @@ OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 
 # Total number of lines given by:
 # N_GRAPHS * SAMPLES_PER_GRAPH * len(SAMPLE_SIZE_INCREMENTS) * num sampling methods
-SAMPLES_PER_GRAPH = 10
+SAMPLES_PER_GRAPH = 100
 SAMPLE_SIZE = 3000 # 25% of simulation graphs
 INCREMENT_SIZE = 500
 SAMPLE_SIZE_INCREMENTS = np.arange(

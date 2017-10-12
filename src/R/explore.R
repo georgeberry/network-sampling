@@ -77,9 +77,13 @@ levels(viz_df$method) = c("Edge Sample",
                           "RDS",
                           "Snowball Sample")
 
-levels(viz_df$category) = c("No clf error",
-                            "Clf error,\nno correction",
-                            "Clf error,\ncorrection")
+levels(viz_df$category) = c("e=0.0",
+                            "e=0.1\nno correction",
+                            "e=0.2\nno correction",
+                            "e=0.3\nno correction",
+                            "e=0.1\ncorrection",
+                            "e=0.2\ncorrection",
+                            "e=0.3\ncorrection")
 
 
 #### Bias analysis ###############################################################
@@ -99,7 +103,7 @@ p1 = viz_df %>%
 # minority ingroup proportion
 p2 = viz_df %>%
   filter(method != "Ideal Sampling", p_misclassify %in% c(0.0, 0.2)) %>%
-  mutate(err = t_bb - s_bb) %>%
+  mutate(err = t_b - s_b) %>%
   ggplot(aes(x=category, y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
   geom_boxplot() +
@@ -202,20 +206,32 @@ viz_df %>%
 # m_a = size of group a
 
 viz_df %>%
-  filter(method == 'RDS', p_misclassify <= 0.2) %>%
-  summarize(cov(t_aa, m_a))
+  filter(method == 'RDS', p_misclassify <= 0.0) %>%
+  summarize(cov(t_aa_raw, t_bb_raw))
+
+viz_df %>%
+  filter(method == 'RDS', p_misclassify <= 0.0) %>%
+  summarize(cov(t_aa_raw, t_ab_raw))
+
+viz_df %>%
+  filter(method == 'RDS', p_misclassify <= 0.0) %>%
+  summarize(cov(t_bb_raw, t_ab_raw))
+
+
+
+
 
 viz_df %>%
   filter(method == 'RDS', p_misclassify <= 0.2) %>%
-  summarize(cov(t_bb, m_b))
+  summarize(cov(t_b, m_b))
 
 viz_df %>%
   filter(method == 'RDS', p_misclassify <= 0.2) %>%
-  summarize(cov(t_bb, t_aa))
+  summarize(cov(t_b, t_a))
 
 viz_df %>%
   filter(method == 'RDS', p_misclassify <= 0.2) %>%
-  summarize(cov(t_bb, t_aa))
+  summarize(cov(t_b, t_a))
 
 viz_df %>%
   filter(method == 'RDS') %>%
