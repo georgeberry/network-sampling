@@ -237,3 +237,17 @@ viz_df %>%
   filter(method == 'RDS') %>%
   group_by(p_misclassify) %>%
   summarize()
+
+#### As we increase p misclassify
+viz_df %>%
+  filter(!(p_misclassify > 0 & clf_err_corrected == FALSE)) %>%
+  mutate(err = h_b_hat - h_b) %>%
+  ggplot(aes(x = factor(p_misclassify), y = err, color=method)) +
+  geom_hline(yintercept=0, linetype='dashed') +
+  geom_boxplot() +
+  theme_bw() +
+  stat_summary(fun.y='mean', geom='point', color='black') +
+  facet_grid( ~ method) +
+  lims(y=c(-0.6, 0.6))
+  
+  
