@@ -72,10 +72,10 @@ viz_df = read_tsv('/Users/g/Documents/network-sampling/output.tsv') %>%
   mutate(category = factor(category))
 
 levels(viz_df$method) = c("Edge Sample",
+                          "Ideal Sampling",
                           "Node Sample",
                           "RDS",
-                          "Snowball Sample",
-                          "Sample Ideal")
+                          "Snowball Sample")
 
 levels(viz_df$category) = c("No clf error",
                             "Clf error,\nno correction",
@@ -86,7 +86,7 @@ levels(viz_df$category) = c("No clf error",
 
 # minority group proportion
 p1 = viz_df %>%
-  filter(method != "Sample Ideal", p_misclassify %in% c(0.0, 0.2)) %>%
+  filter(method != "Ideal Sampling", p_misclassify %in% c(0.0, 0.2)) %>%
   mutate(err = m_b - p_b) %>%
   ggplot(aes(x=category, y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -98,7 +98,7 @@ p1 = viz_df %>%
   
 # minority ingroup proportion
 p2 = viz_df %>%
-  filter(method != "Sample Ideal", p_misclassify %in% c(0.0, 0.2)) %>%
+  filter(method != "Ideal Sampling", p_misclassify %in% c(0.0, 0.2)) %>%
   mutate(err = t_bb - s_bb) %>%
   ggplot(aes(x=category, y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -114,7 +114,7 @@ mp1 = multiplot(p1, p2, cols=1)
 
 # coleman's homophily for minority group
 p3 = viz_df %>%
-  filter(method != "Sample Ideal", p_misclassify %in% c(0.0, 0.2)) %>%
+  filter(method != "Ideal Sampling", p_misclassify %in% c(0.0, 0.2)) %>%
   mutate(err = h_b_hat - h_b) %>%
   ggplot(aes(x=category, y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -140,13 +140,14 @@ xtable(
 
 # visibility of minority group
 p4 = viz_df %>%
-  filter(method != "Sample Ideal", p_misclassify %in% c(0.0, 0.2)) %>%
+  filter(method != "Ideal Sampling", p_misclassify %in% c(0.0, 0.2)) %>%
   mutate(err = top_20_hat - top_20_true) %>%
   ggplot(aes(x=category, y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
   geom_boxplot() +
   theme_bw() +
   facet_grid(~ method) +
+  stat_summary(fun.y='mean', geom='point', color='black') +
   lims(y=c(-0.4, 0.4))
 ggsave("/Users/g/Documents/network-sampling/plots/p4.pdf",
        p4,
@@ -157,7 +158,7 @@ ggsave("/Users/g/Documents/network-sampling/plots/p4.pdf",
 #### err at sampling fraction ####################################################
 
 p5 = viz_df %>%
-  filter(p_misclassify == 0.2, clf_err_corrected == TRUE, method != "Sample Ideal") %>%
+  filter(p_misclassify == 0.2, clf_err_corrected == TRUE, method != "Ideal Sampling") %>%
   mutate(err = h_b_hat - h_b) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -169,7 +170,7 @@ p5 = viz_df %>%
 
 # visibility of minority grouop
 p6 = viz_df %>%
-  filter(p_misclassify == 0.2, clf_err_corrected == TRUE, method != "Sample Ideal") %>%
+  filter(p_misclassify == 0.2, clf_err_corrected == TRUE, method != "Ideal Sampling") %>%
   mutate(err = top_20_hat - top_20_true) %>%
   ggplot(aes(x=factor(sampling_frac), y=err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -186,7 +187,7 @@ mp2 = multiplot(p5, p6, cols=1)
 #### Compare RDS to ideal variance given by either edge or node sampling #########
 
 viz_df %>%
-  filter(method %in% c('RDS', 'Sample Ideal')) %>%
+  filter(method %in% c('RDS', 'Ideal Sampling')) %>%
   mutate(err = h_b_hat - h_b) %>%
   ggplot(aes(x = category, y = err, color = factor(method))) +
   geom_hline(yintercept=0, linetype='dashed') +

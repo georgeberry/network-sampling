@@ -25,9 +25,11 @@ def misclassify_nodes(g, p):
 
 def get_correct_group_proportions(m_a, m_b, p_misclassify):
     m = np.array([m_a, m_b])
+    p = 1 - p_misclassify
+    e = p_misclassify
     C = np.array([
-        [1 - p_misclassify, p_misclassify],
-        [p_misclassify, 1 - p_misclassify],
+        [p, e],
+        [e, p],
     ])
     m_a, m_b = inv(C).dot(m)
     return m_a, m_b
@@ -35,22 +37,19 @@ def get_correct_group_proportions(m_a, m_b, p_misclassify):
 def get_correct_crosslink_proportions(
     l_aa_hat,
     l_ab_hat,
-    l_ba_hat,
     l_bb_hat,
     p_misclassify,
 ):
-    link_sum = l_aa_hat + l_ab_hat + l_ba_hat + l_bb_hat
-    s = np.array([l_aa_hat, l_ab_hat, l_ba_hat, l_bb_hat]) / link_sum
-
+    link_sum = l_aa_hat + l_ab_hat + l_bb_hat
+    t = np.array([l_aa_hat, l_ab_hat, l_bb_hat]) / link_sum
     p = 1 - p_misclassify # p right
     e = p_misclassify     # p wrong
     M = np.array([
-        [p*p, p*e, e*p, e*e],
-        [p*e, p*p, e*e, e*p],
-        [e*p, e*e, p*p, p*e],
-        [e*e, e*p, p*e, p*p],
+        [  p*p,       p*e, e*e],
+        [2*p*e, p*p + e*e, 2*p*e],
+        [  e*e,       e*p, p*p],
     ])
-    return inv(M).dot(s)
+    return inv(M).dot(t)
 
 
 def get_correct_top20(df, p_misclassify):
@@ -66,7 +65,7 @@ def update_crosslink_dict(g, edge, crosslink_dict):
     n1, n2 = edge
     src_grp = g.node[n1]['group']
     dst_grp = g.node[n2]['group']
-    crosslink_dict[(src_grp, dst_grp)] += 1
+    crosslink_dict[tuple(sorted((src_grp, dst_grp))] += 1
 
 #### RDS functions #############################################################
 
@@ -142,12 +141,11 @@ def population(g):
     link_counts = {
         ('a', 'a'): 0,
         ('a', 'b'): 0,
-        ('b', 'a'): 0,
         ('b', 'b'): 0,
     }
     for n1, n2 in g.edges_iter():
         grp1, grp2 = g.node[n1]['group'], g.node[n2]['group']
-        link_counts[(grp1, grp2)] += 1
+        link_counts[tuple(sorted((grp1, grp2)))] += 1
     for idx, attr in g.nodes_iter(data=True):
         node_counts[attr['group']] += 1
     return node_counts, link_counts
@@ -177,7 +175,6 @@ def sample_rds(
     crosslink_dict = {
         ('a', 'a'): 0,
         ('a', 'b'): 0,
-        ('b', 'a'): 0,
         ('b', 'b'): 0,
     }
 
@@ -211,7 +208,6 @@ def sample_edges(g, n, node_statistic):
     crosslink_dict = {
         ('a', 'a'): 0,
         ('a', 'b'): 0,
-        ('b', 'a'): 0,
         ('b', 'b'): 0,
     }
     edges = g.edges()
@@ -241,7 +237,6 @@ def sample_nodes(g, n, node_statistic):
     crosslink_dict = {
         ('a', 'a'): 0,
         ('a', 'b'): 0,
-        ('b', 'a'): 0,
         ('b', 'b'): 0,
     }
 
@@ -295,7 +290,6 @@ def sample_snowball(g, n, node_statistic):
     crosslink_dict = {
         ('a', 'a'): 0,
         ('a', 'b'): 0,
-        ('b', 'a'): 0,
         ('b', 'b'): 0,
     }
 
