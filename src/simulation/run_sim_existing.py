@@ -111,8 +111,8 @@ l_aa = true_link_grp_counts[('a','a')]
 l_ab = true_link_grp_counts[('a','b')]
 l_bb = true_link_grp_counts[('b','b')]
 
-s_a = l_aa / (l_aa + l_ab)
-s_b = l_bb / (l_bb + l_ab)
+s_a = (2 * l_aa) / (2 * l_aa + l_ab)
+s_b = (2 * l_bb) / (2 * l_bb + l_ab)
 
 # print(s_a, s_b)
 

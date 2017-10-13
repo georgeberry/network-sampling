@@ -240,9 +240,9 @@ viz_df %>%
 
 #### As we increase p misclassify
 viz_df %>%
-  filter(!(p_misclassify > 0 & clf_err_corrected == FALSE)) %>%
+  #filter(!(p_misclassify > 0 & clf_err_corrected == FALSE)) %>%
   mutate(err = h_b_hat - h_b) %>%
-  ggplot(aes(x = factor(p_misclassify), y = err, color=method)) +
+  ggplot(aes(x = factor(paste0(p_misclassify, clf_err_corrected)), y = err, color=method)) +
   geom_hline(yintercept=0, linetype='dashed') +
   geom_boxplot() +
   theme_bw() +
