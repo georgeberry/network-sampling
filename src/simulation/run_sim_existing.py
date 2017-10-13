@@ -344,7 +344,7 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
 
         record_list.append(record)
 
-print("Processed {}: {}.".format(INPUT_FILE,graph_idx))
+# print("Processed {}: {}.".format(INPUT_FILE,graph_idx))
 
 with open(OUTPUT_FILE, 'wb') as f:
     pickle.dump(record_list, f)
