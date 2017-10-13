@@ -45,9 +45,9 @@ def get_correct_crosslink_proportions(
     p = 1 - p_misclassify # p right
     e = p_misclassify     # p wrong
     M = np.array([
-        [  p*p,       p*e, e*e],
-        [2*p*e, p*p + e*e, 2*p*e],
-        [  e*e,       e*p, p*p],
+        [  p*p,     p*e,   e*e],
+        [2*p*e, p*p+e*e, 2*p*e],
+        [  e*e,     e*p,   p*p],
     ])
     return inv(M).dot(t)
 
@@ -180,8 +180,10 @@ def sample_rds(
         ('b', 'b'): 0,
     }
 
+    nodes = g.nodes()
+
     # random seed
-    source = random.choice(g.nodes())
+    source = random.choice(nodes)
     degree_list.append(g.degree(source))
     node_stat, colnames = node_statistic(g, source)
     node_statistic_list.append(node_stat)
@@ -241,9 +243,10 @@ def sample_nodes(g, n, node_statistic):
         ('a', 'b'): 0,
         ('b', 'b'): 0,
     }
+    nodes = g.nodes()
 
     while len(degree_list) < n:
-        node = random.choice(g.nodes())
+        node = random.choice(nodes)
         visited_nodes.add(node)
         degree_list.append(g.degree(node))
         node_stat, colnames = node_statistic(g, node)
@@ -312,16 +315,13 @@ def sample_snowball(g, n, node_statistic):
                     node_stat, colnames = node_statistic(g, neighbor)
                     node_statistic_list.append(node_stat)
                     next_frontier.add(neighbor)
+                    update_crosslink_dict(g, (node, neighbor), crosslink_dict)
 
-                if not len(degree_list) < n:
+                if len(degree_list) >= n:
                     break
-            if not len(degree_list) < n:
+            if len(degree_list) >= n:
                 break
         frontier = next_frontier
-
-    s = g.subgraph(nbunch=visited_nodes)
-    for edge in s.edges_iter():
-        update_crosslink_dict(g, edge, crosslink_dict)
 
     df = pd.DataFrame(node_statistic_list)
     df.columns = colnames

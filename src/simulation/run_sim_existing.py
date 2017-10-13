@@ -181,49 +181,66 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
         gg = deepcopy(g)
 
     method, fn = sampling_method
-    if 'sample_rds' in method:
-        if method == 'sample_rds':
-            df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
-            m_b = rds_estimate(df, 'group')
-            m_a = 1 - m_b
-            mu = rds_estimate(df, 'degree')
-            df = boot_with_attr(df, mu, n=20000)
-        if method == 'sample_rds_double':
-            df, crosslink_dict = fn(
-                gg,
-                sample_size,
-                node_statistic_grp_b,
-            )
-            m_b = rds_estimate(df, 'group')
-            m_a = 1 - m_b
-            df, crosslink_dict = fn(
-                gg,
-                sample_size,
-                node_statistic_grp_b,
-            )
-            mu = rds_estimate(df, 'degree')
-            df = boot_with_attr(df, mu, n=20000)
+    while True: # enforce a few basic rules for the sample
+        if 'sample_rds' in method:
+            if method == 'sample_rds':
+                df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
+                m_b = rds_estimate(df, 'group')
+                m_a = 1 - m_b
+                mu = rds_estimate(df, 'degree')
+                df = boot_with_attr(df, mu, n=20000)
+            if method == 'sample_rds_double':
+                df, crosslink_dict = fn(
+                    gg,
+                    sample_size,
+                    node_statistic_grp_b,
+                )
+                m_b = rds_estimate(df, 'group')
+                m_a = 1 - m_b
+                df, crosslink_dict = fn(
+                    gg,
+                    sample_size,
+                    node_statistic_grp_b,
+                )
+                mu = rds_estimate(df, 'degree')
+                df = boot_with_attr(df, mu, n=20000)
 
-            sample_size = 2 * sample_size
-    elif method == 'sample_ideal':
-        fn_node, fn_edge = fn
-        df, _ = fn_node(
-            gg,
-            sample_size,
-            node_statistic_grp_b,
-        )
-        m_b = df.group.mean()
-        m_a = 1 - df.group.mean()
-        _, crosslink_dict = fn_edge(
-            gg,
-            sample_size,
-            node_statistic_grp_b,
-        )
-    else:
-        df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
-        # janky: assume node stat is group b
-        m_b = df.group.mean()
-        m_a = 1 - df.group.mean()
+                sample_size = 2 * sample_size
+        elif method == 'sample_ideal':
+            fn_node, fn_edge = fn
+            df, _ = fn_node(
+                gg,
+                sample_size,
+                node_statistic_grp_b,
+            )
+            m_b = df.group.mean()
+            m_a = 1 - df.group.mean()
+            _, crosslink_dict = fn_edge(
+                gg,
+                sample_size,
+                node_statistic_grp_b,
+            )
+        else:
+            df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
+            # janky: assume node stat is group b
+            m_b = df.group.mean()
+            m_a = 1 - df.group.mean()
+
+        # sanity conditions
+        l_aa_hat = crosslink_dict[('a','a')]
+        l_ab_hat = crosslink_dict[('a','b')]
+        l_bb_hat = crosslink_dict[('b','b')]
+        condition = (m_a > 0) and (m_b > 0) and (l_aa_hat > 0) and\
+            (l_ab_hat > 0) and (l_bb_hat > 0)
+        if condition == True:
+            break
+        else:
+            print('{} {} {} {} {}'.format(
+                m_a, m_b, l_aa_hat, l_ab_hat, l_bb_hat
+            ))
+            print(g['params'])
+            print(sampling_method)
+            print(p_misclassify)
 
     l_aa_hat = crosslink_dict[('a','a')]
     l_ab_hat = crosslink_dict[('a','b')]
