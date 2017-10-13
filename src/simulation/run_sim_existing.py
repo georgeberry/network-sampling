@@ -238,7 +238,7 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
             print('{} {} {} {} {}'.format(
                 m_a, m_b, l_aa_hat, l_ab_hat, l_bb_hat
             ))
-            print(g['params'])
+            print(g.graph['params'])
             print(sampling_method, sample_size)
             print(p_misclassify)
 
