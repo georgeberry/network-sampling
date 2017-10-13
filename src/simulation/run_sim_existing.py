@@ -59,7 +59,7 @@ OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 
 # Total number of lines given by:
 # N_GRAPHS * SAMPLES_PER_GRAPH * len(SAMPLE_SIZE_INCREMENTS) * num sampling methods
-SAMPLES_PER_GRAPH = 10
+SAMPLES_PER_GRAPH = 100
 SAMPLE_SIZE = 3000 # 25% of simulation graphs
 INCREMENT_SIZE = 500
 SAMPLE_SIZE_INCREMENTS = np.arange(
