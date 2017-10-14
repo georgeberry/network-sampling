@@ -355,11 +355,11 @@ if __name__ == '__main__':
     num_nodes = [10000]
     mean_degs = [4] # [2, 4]
     homophily_vals = [
-        (0.2, 0.2),
-        (0.5, 0.5),
+        #(0.2, 0.2),
+        #(0.5, 0.5),
         (0.8, 0.8),
     ]
-    majority_group_sizes = [0.5, 0.65, 0.8]
+    majority_group_sizes = [0.8]#[0.5, 0.65, 0.8]
 
     prod = itertools.product(
         num_nodes,
