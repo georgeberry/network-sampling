@@ -325,8 +325,8 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
                 p_misclassify,
             )
 
-        t_a = l_aa_hat / (l_aa_hat + l_ab_hat)
-        t_b = l_bb_hat / (l_bb_hat + l_ab_hat)
+        t_a = 2*l_aa_hat / (2*l_aa_hat + l_ab_hat)
+        t_b = 2*l_bb_hat / (2*l_bb_hat + l_ab_hat)
 
         h_a_hat = colemans_h(m_a, t_a)
         h_b_hat = colemans_h(m_b, t_b)
