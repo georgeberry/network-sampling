@@ -52,7 +52,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 
 #
 
-viz_df = read_tsv('/Users/g/Documents/network-sampling/output2.tsv') %>%
+viz_df = read_tsv('/Users/g/Documents/network-sampling/scn.tsv') %>%
   filter(!is.na(h_b_hat)) %>%
 # viz_df = read_tsv('/Users/g/Documents/network-sampling/dfs/output.tsv') %>%
   mutate(clf_err_corrected = ifelse(clf_err_corrected == 'True', TRUE, FALSE),

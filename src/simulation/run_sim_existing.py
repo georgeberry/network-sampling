@@ -10,7 +10,7 @@ import math
 
 """
 Run this:
-    find /mnt/md0/network_sampling_data/graphs -type f | parallel python run_sim_existing.py
+    find /mnt/md0/network_sampling_data/graphs/ -type f | parallel -j 15 python run_sim_existing.py
 
 To test:
     python run_sim_existing.py /mnt/md0/network_sampling_data/network-sampling/sim_output/graphs/10000_2_0.2_0.2_0.5_0.p
@@ -111,8 +111,8 @@ l_aa = true_link_grp_counts[('a','a')]
 l_ab = true_link_grp_counts[('a','b')]
 l_bb = true_link_grp_counts[('b','b')]
 
-s_a = (2 * l_aa) / (2 * l_aa + l_ab)
-s_b = (2 * l_bb) / (2 * l_bb + l_ab)
+s_a = (2*l_aa) / (2*l_aa + l_ab)
+s_b = (2*l_bb) / (2*l_bb + l_ab)
 
 # print(s_a, s_b)
 
@@ -249,8 +249,8 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
     # for sample_ideal this is done with nodes
     top_20_hat = get_top_20pct(df)
 
-    t_a = l_aa_hat / (l_aa_hat + l_ab_hat)
-    t_b = l_bb_hat / (l_bb_hat + l_ab_hat)
+    t_a = 2*l_aa_hat / (2*l_aa_hat + l_ab_hat)
+    t_b = 2*l_bb_hat / (2*l_bb_hat + l_ab_hat)
 
     h_a_hat = colemans_h(m_a, t_a)
     h_b_hat = colemans_h(m_b, t_b)
