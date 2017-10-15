@@ -1,9 +1,5 @@
 # network-sampling
 
-## Old code
-
-Check out `src/old_sampling_code.py` for some old and messy code that does a bad version of the task we want to do.
-
 ## Some coding conventions
 
 * Use python 3
