@@ -233,8 +233,8 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
         l_aa_hat = crosslink_dict[('a','a')]
         l_ab_hat = crosslink_dict[('a','b')]
         l_bb_hat = crosslink_dict[('b','b')]
-        condition = (m_a > 0) and (m_b > 0) and (l_aa_hat > 0) and\
-            (l_ab_hat > 0) and (l_bb_hat > 0)
+        condition = (m_a > 0) and (m_b > 0) #  and (l_aa_hat > 0) and\
+            # (l_ab_hat > 0) and (l_bb_hat > 0)
         if condition == True:
             break
         else:

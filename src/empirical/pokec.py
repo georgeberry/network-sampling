@@ -74,3 +74,5 @@ g.graph['params'] = {
 gc = max(nx.connected_component_subgraphs(g), key=len)
 
 nx.write_gpickle(gc, base_path + 'pokec_graph.p')
+
+g = nx.read_gpickle(base_path + 'pokec_graph.p')
