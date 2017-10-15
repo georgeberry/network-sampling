@@ -60,8 +60,17 @@ with open(edgelist_output_path, 'r') as f:
 g = nx.Graph()
 g.add_edges_from(edges)
 
-for n, gender in attr_dict.items():
-    if n in g:
-        g.node[n]['group'] = gender
+attr_dict = {k:v for k, v in attr_dict.items() if k in g}
 
-nx.write_gpickle(g, base_path + 'pokec_graph.p')
+nx.set_node_attributes(g, 'group', attr_dict)
+nx.set_node_attributes(g, 'degree', g.degree())
+
+g.graph['params'] = {
+    'num_nodes': g.number_of_nodes(),
+    'homophily': [None, None],
+    'idx': None,
+}
+
+gc = max(nx.connected_component_subgraphs(g), key=len)
+
+nx.write_gpickle(gc, base_path + 'pokec_graph.p')

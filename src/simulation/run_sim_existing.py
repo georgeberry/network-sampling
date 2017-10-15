@@ -19,7 +19,7 @@ To test locally:
     python run_sim_existing.py /Users/g/Documents/network-sampling/graphs/10000_2_0.2_0.2_0.5_0.p
 
 Run with sexual contact network
-    python run_sim_existing.py ../../data/sexual_contact/graph.p 100
+    python run_sim_existing.py /mnt/md0/geb97/network-sampling/data/sexual_contact/sc_graph.p 100
 
 Run with pokec
     python run_sim_existing.py /mnt/md0/geb97/network-sampling/data/pokec/pokec_graph.p 100
@@ -84,13 +84,13 @@ graph_idx = g.graph['params'].pop('idx')
 #### Run samples ###############################################################
 
 sampling_methods = {
-    'sample_edges':sample_edges,
-    'sample_nodes':sample_nodes,
+    # 'sample_edges':sample_edges,
+    # 'sample_nodes':sample_nodes,
     # 'sample_ego_networks':sample_ego_networks,
     'sample_rds': sample_rds,
     # 'sample_rds_double': sample_rds,
-    'sample_snowball': sample_snowball,
-    'sample_ideal': (sample_nodes, sample_edges),
+    # 'sample_snowball': sample_snowball,
+    # 'sample_ideal': (sample_nodes, sample_edges),
 }
 
 misclassification_probs = [

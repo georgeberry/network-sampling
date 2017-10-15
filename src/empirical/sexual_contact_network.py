@@ -18,13 +18,15 @@ Data from:
 import networkx as nx
 import pandas as pd
 
-import sys
-sys.path.append('..')
+base_path = '/mnt/md0/geb97/network-sampling/data/sexual_contact/'
+# base_path = '/Users/g/Drive/project-RA/network-sampling/data/sexual_contact/'
+
+df_path = base_path + 'journal.pcbi.1001109.s001.CSV'
 
 #### do the thing! #############################################################
 
 df = pd.read_csv(
-    '/Users/g/Drive/project-RA/network-sampling/data/sexual_contact/journal.pcbi.1001109.s001.csv',
+    df_path,
     sep=';',
     skiprows=24,
     header=None)
@@ -56,6 +58,6 @@ g.graph['params'] = {
     'homophily': [None, None],
     'idx': None,
 }
-g = max(nx.connected_component_subgraphs(g), key=len)
+gc = max(nx.connected_component_subgraphs(g), key=len)
 
-nx.write_gpickle(g, '../../data/sexual_contact/graph.p')
+nx.write_gpickle(gc, base_path + 'sc_graph.p')
