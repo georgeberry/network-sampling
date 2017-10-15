@@ -30,16 +30,6 @@
 1. Snowball
 1. RDS
 
-## Summary
-
-This gives 3 parmeters, 3 network types, and 4 sampling methods for a total of 45 analyses
-
-This is too many
-
-We are going to do the full gamut for the 4 sampling methods on the simulated parameter space.
-
-What will these plots look like?
-
 ## Types of plots to make
 1. Accuracy at sampling fraction for simulated graphs, 4 sampling methods, with and without correction for classifier error
 1. Bias for a fixed sampling size (1000 nodes)

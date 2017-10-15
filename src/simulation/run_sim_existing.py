@@ -19,8 +19,10 @@ To test locally:
     python run_sim_existing.py /Users/g/Documents/network-sampling/graphs/10000_2_0.2_0.2_0.5_0.p
 
 Run with sexual contact network
-    python run_sim_existing.py ../../data/sexual_contact/graph.p
+    python run_sim_existing.py ../../data/sexual_contact/graph.p 100
 
+Run with pokec
+    python run_sim_existing.py /mnt/md0/geb97/network-sampling/data/pokec/pokec_graph.p 100
 
 Requires GNU parallel. This file operates on one graph file and outputs one
 output file. Then, aggregate_runs.py joins them together into one big df
@@ -50,6 +52,8 @@ from sampling_procedures import get_correct_top20
 
 #### Params ####################################################################
 INPUT_FILE = sys.argv[1]
+SAMPLES_PER_GRAPH = int(sys.argv[2])
+
 # INPUT_FILE = '/mnt/md0/network_sampling_data/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
 # print(INPUT_FILE)
 
@@ -59,7 +63,6 @@ OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 
 # Total number of lines given by:
 # N_GRAPHS * SAMPLES_PER_GRAPH * len(SAMPLE_SIZE_INCREMENTS) * num sampling methods
-SAMPLES_PER_GRAPH = 10
 SAMPLE_SIZE = 3000 # 25% of simulation graphs
 INCREMENT_SIZE = 500
 SAMPLE_SIZE_INCREMENTS = np.arange(
