@@ -95,9 +95,9 @@ sampling_methods = {
 
 misclassification_probs = [
     0.0,
-    0.1,
+    # 0.1,
     0.2,
-    0.3,
+    # 0.3,
 ]
 
 #### Get true values for graph #################################################
@@ -176,32 +176,34 @@ Fixes directly applied to:
     - t_b
 """
 
+node_attrs = deepcopy(g.node)
+
 for samp_idx, sample_size, sampling_method, p_misclassify in space:
     if p_misclassify > 0:
-        gg = deepcopy(g)
-        gg = misclassify_nodes(gg, p_misclassify)
+        g.node = deepcopy(node_attrs)
+        g = misclassify_nodes(g, p_misclassify)
     else:
-        gg = deepcopy(g)
+        g.node = deepcopy(node_attrs)
 
     method, fn = sampling_method
     while True: # enforce a few basic rules for the sample
         if 'sample_rds' in method:
             if method == 'sample_rds':
-                df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
+                df, crosslink_dict = fn(g, sample_size, node_statistic_grp_b)
                 m_b = rds_estimate(df, 'group')
                 m_a = 1 - m_b
                 mu = rds_estimate(df, 'degree')
                 df = boot_with_attr(df, mu, n=20000)
             if method == 'sample_rds_double':
                 df, crosslink_dict = fn(
-                    gg,
+                    g,
                     sample_size,
                     node_statistic_grp_b,
                 )
                 m_b = rds_estimate(df, 'group')
                 m_a = 1 - m_b
                 df, crosslink_dict = fn(
-                    gg,
+                    g,
                     sample_size,
                     node_statistic_grp_b,
                 )
@@ -212,19 +214,19 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
         elif method == 'sample_ideal':
             fn_node, fn_edge = fn
             df, _ = fn_node(
-                gg,
+                g,
                 sample_size,
                 node_statistic_grp_b,
             )
             m_b = df.group.mean()
             m_a = 1 - df.group.mean()
             _, crosslink_dict = fn_edge(
-                gg,
+                g,
                 sample_size,
                 node_statistic_grp_b,
             )
         else:
-            df, crosslink_dict = fn(gg, sample_size, node_statistic_grp_b)
+            df, crosslink_dict = fn(g, sample_size, node_statistic_grp_b)
             # janky: assume node stat is group b
             m_b = df.group.mean()
             m_a = 1 - df.group.mean()
@@ -301,7 +303,7 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
     # )
     # Included in g.graph['params']:
     # num_nodes, mean_degree, h_a, h_b, majority_size, idx
-    record.update(gg.graph['params'])
+    record.update(g.graph['params'])
     record_list.append(record)
 
     # handle missclassify correction here
@@ -346,6 +348,8 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
         record['top_20_hat'] = top_20_hat
 
         record_list.append(record)
+
+    print('Done with {}'.format(samp_idx))
 
 # print("Processed {}: {}.".format(INPUT_FILE,graph_idx))
 

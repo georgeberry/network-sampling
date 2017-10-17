@@ -51,8 +51,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 
 #
 
-# viz_df = read_tsv('/Users/g/Documents/network-sampling/output.tsv') %>%
-viz_df = read_tsv('/Users/g/Documents/network-sampling/scn.tsv') %>%
+viz_df = read_tsv('/Users/g/Documents/network-sampling/output.tsv') %>%
   filter(!is.na(h_b_hat)) %>%
   mutate(clf_err_corrected = ifelse(clf_err_corrected == 'True', TRUE, FALSE),
          sampling_frac=samp_size/num_nodes,
@@ -219,7 +218,9 @@ p5 = viz_df %>%
          Visibility = top_20_hat - top_20_true) %>%
   select(sampling_frac, Node, Edge, Homophily, Visibility) %>%
   gather(key, val, Node, Edge, Homophily, Visibility) %>%
-  mutate(key = factor(key, levels=c('Node', 'Edge', 'Homophily', 'Visibility'))) %>%
+  mutate(key = factor(key,
+                      levels=c('Node', 'Edge', 'Homophily', 'Visibility'),
+                      labels=c('Node Proportion', 'Edge Proportion', 'Homophily', 'Visibility'))) %>%
   ggplot(aes(x=factor(sampling_frac), y=val, color=key)) +
   geom_boxplot(outlier.alpha = 0.2) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -249,7 +250,9 @@ p6 = viz_df %>%
          Visibility = top_20_hat - top_20_true) %>%
   select(p_misclassify, Node, Edge, Homophily, Visibility) %>%
   gather(key, val, Node, Edge, Homophily, Visibility) %>%
-  mutate(key = factor(key, levels=c('Node', 'Edge', 'Homophily', 'Visibility'))) %>%
+  mutate(key = factor(key,
+                      levels=c('Node', 'Edge', 'Homophily', 'Visibility'),
+                      labels=c('Node Proportion', 'Edge Proportion', 'Homophily', 'Visibility'))) %>%
   ggplot(aes(x=factor(p_misclassify), y=val, color=key)) +
   geom_boxplot(outlier.alpha = 0.2) +
   geom_hline(yintercept=0, linetype='dashed') +
@@ -370,28 +373,16 @@ viz_df %>%
             sd(Homophily),
             sd(Visibility))
 
-#### OLD EXPLORATORY STUFF #######################################################
+#### NRMSE #######################################################################
 
 viz_df %>%
-  #filter(!(p_misclassify > 0 & clf_err_corrected == FALSE)) %>%
-  mutate(err = h_b_hat - h_b) %>%
-  ggplot(aes(x = factor(paste0(p_misclassify, clf_err_corrected)), y = err, color=method)) +
-  geom_hline(yintercept=0, linetype='dashed') +
-  geom_boxplot() +
-  theme_bw() +
-  stat_summary(fun.y='mean', geom='point', color='black') +
-  facet_grid( ~ method) +
-  lims(y=c(-0.6, 0.6))
-
-
-p5 = viz_df %>%
   filter(method != "Ideal Sampling",
-         category %in% c("e=0.0",
-                         "e=0.1\ncorrection",
-                         "e=0.2\ncorrection",
-                         "e=0.3\ncorrection")) %>%
-  mutate(err = h_b_hat - h_b) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=method)) +
+         p_misclassify %in% c(0.0, 0.2),
+         samp_size == 3000) %>%
+  mutate(err = m_b - p_b) %>%
+  group_by(category, method) %>%
+  summarize(err = sqrt(mean(err^2)) / mean(p_b)) %>%
+  ggplot(aes(x=category, y=err, color=method)) +
   geom_boxplot(outlier.alpha = 0.2) +
   geom_hline(yintercept=0, linetype='dashed') +
   stat_summary(fun.y='mean', geom='point', color='black') +
@@ -401,18 +392,56 @@ p5 = viz_df %>%
         axis.title.x = element_blank(),
         strip.text.x = element_text(size = 12)) +
   facet_grid(~ method) +
-  lims(y=c(-0.3, 0.3))+
-  ylab(expression(H[b]~~error))
+  labs(title='Group proportion error', y=expression(p[b]~~error))
 
-# visibility of minority grouop
-p6 = viz_df %>%
+viz_df %>%
   filter(method != "Ideal Sampling",
-         category %in% c("e=0.0",
-                         "e=0.1\ncorrection",
-                         "e=0.2\ncorrection",
-                         "e=0.3\ncorrection")) %>%
+         p_misclassify %in% c(0.0, 0.2),
+         samp_size == 3000) %>%
+  mutate(err = t_b - s_b) %>%
+  group_by(category, method) %>%
+  summarize(err = sqrt(mean(err^2)) / mean(s_b)) %>%
+  ggplot(aes(x=category, y=err, color=method)) +
+  geom_boxplot(outlier.alpha = 0.2) +
+  geom_hline(yintercept=0, linetype='dashed') +
+  stat_summary(fun.y='mean', geom='point', color='black') +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y = element_text(size=14),
+        axis.title.x = element_blank(),
+        strip.text.x = element_text(size = 12)) +
+  facet_grid(~ method) +
+  labs(title='Ingroup edge proportion error', y=expression(p[b]~~error))
+
+viz_df %>%
+  filter(method != "Ideal Sampling",
+         p_misclassify %in% c(0.0, 0.2),
+         samp_size == 3000) %>%
+  mutate(err = h_b_hat - h_b) %>%
+  group_by(category, method) %>%
+  summarize(err = sqrt(mean(err^2)) / mean(h_b)) %>%
+  ggplot(aes(x=category, y=err, color=method)) +
+  geom_boxplot(outlier.alpha = 0.2) +
+  geom_hline(yintercept=0, linetype='dashed') +
+  stat_summary(fun.y='mean', geom='point', color='black') +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y = element_text(size=14),
+        axis.title.x = element_blank(),
+        strip.text.x = element_text(size = 12)) +
+  facet_grid(~ method) +
+  lims(y=c(0,2)) +
+  labs(title='Homophily error', y=expression(p[b]~~error))
+
+
+viz_df %>%
+  filter(method != "Ideal Sampling",
+         p_misclassify %in% c(0.0, 0.2),
+         samp_size == 3000) %>%
   mutate(err = top_20_hat - top_20_true) %>%
-  ggplot(aes(x=factor(sampling_frac), y=err, color=method)) +
+  group_by(category, method) %>%
+  summarize(err = sqrt(mean(err^2)) / mean(top_20_true)) %>%
+  ggplot(aes(x=category, y=err, color=method)) +
   geom_boxplot(outlier.alpha = 0.2) +
   geom_hline(yintercept=0, linetype='dashed') +
   stat_summary(fun.y='mean', geom='point', color='black') +
@@ -422,21 +451,83 @@ p6 = viz_df %>%
         axis.title.x = element_blank(),
         strip.text.x = element_text(size = 12)) +
   facet_grid(~ method) +
-  lims(y=c(-0.3, 0.3))+
-  ylab(expression(v[b]~~error))
+  labs(title='Homophily error', y=expression(p[b]~~error))
 
 
-# save manually, 11 by 6
-mp3 = multiplot(p5, p6, cols=1)
 
-#### Compare RDS to ideal variance given by either edge or node sampling #########
+
+levels(viz_df$category) = c("A",
+                            "e=0.1\nno correction",
+                            "e=0.2\nno correction",
+                            "e=0.3\nno correction",
+                            "B",
+                            "C",
+                            "D")
 
 viz_df %>%
-  filter(method %in% c('RDS', 'Ideal Sampling')) %>%
-  mutate(err = h_b_hat - h_b) %>%
-  ggplot(aes(x = category, y = err, color = factor(method))) +
+  filter(method == "RDS",
+         category %in% c("A",
+                         "B",
+                         "C",
+                         "D"),
+         samp_size == 3000) %>%
+  mutate(Node = m_b - p_b,
+         Edge = t_b - s_b,
+         Homophily = h_b_hat - h_b,
+         Visibility = top_20_hat - top_20_true) %>%
+  group_by(p_misclassify) %>%
+  summarize(Node = sqrt(mean(Node^2))/mean(p_b),
+            Edge = sqrt(mean(Edge^2))/mean(p_b),
+            Homophily = sqrt(mean(Homophily^2))/mean(p_b),
+            Visibility = sqrt(mean(Visibility^2))/mean(p_b)) %>%
+  select(p_misclassify, Node, Edge, Homophily, Visibility) %>%
+  gather(key, val, Node, Edge, Homophily, Visibility) %>%
+  mutate(key = factor(key,
+                      levels=c('Node', 'Edge', 'Homophily', 'Visibility'),
+                      labels=c('Node Proportion', 'Edge Proportion', 'Homophily', 'Visibility'))) %>%
+  ggplot(aes(x=factor(p_misclassify), y=val, color=key)) +
+  geom_point() +
   geom_hline(yintercept=0, linetype='dashed') +
-  geom_boxplot() +
+  stat_summary(fun.y='mean', geom='point', color='black') +
   theme_bw() +
-  facet_grid(~ method)
+  theme(legend.position="none",
+        axis.title.y = element_text(size=14),
+        axis.title.x = element_blank(),
+        strip.text.x = element_text(size = 12)) +
+  facet_grid(~ key) +
+  labs(title='RDS error at misclassification level', y='Error')
 
+
+viz_df %>%
+  filter(method == "RDS",
+       category %in% c("A",
+                       "B",
+                       "C",
+                       "D"),
+       p_misclassify == 0.2,
+       clf_err_corrected == TRUE) %>%
+  mutate(Node = m_b - p_b,
+         Edge = t_b - s_b,
+         Homophily = h_b_hat - h_b,
+         Visibility = top_20_hat - top_20_true) %>%
+  group_by(sampling_frac) %>%
+  summarize(Node = sqrt(mean(Node^2))/mean(p_b),
+            Edge = sqrt(mean(Edge^2))/mean(p_b),
+            Homophily = sqrt(mean(Homophily^2))/mean(p_b),
+            Visibility = sqrt(mean(Visibility^2))/mean(p_b)) %>%
+  select(sampling_frac, Node, Edge, Homophily, Visibility) %>%
+  gather(key, val, Node, Edge, Homophily, Visibility) %>%
+  mutate(key = factor(key,
+                      levels=c('Node', 'Edge', 'Homophily', 'Visibility'),
+                      labels=c('Node Proportion', 'Edge Proportion', 'Homophily', 'Visibility'))) %>%
+  ggplot(aes(x=factor(sampling_frac), y=val, color=key)) +
+  geom_boxplot(outlier.alpha = 0.2) +
+  geom_hline(yintercept=0, linetype='dashed') +
+  stat_summary(fun.y='mean', geom='point', color='black') +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y = element_text(size=14),
+        axis.title.x = element_blank(),
+        strip.text.x = element_text(size = 12)) +
+  facet_grid(~ key) +
+  labs(title='RDS error at sampling fraction', y='Error')

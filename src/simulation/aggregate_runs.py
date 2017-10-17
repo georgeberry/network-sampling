@@ -6,6 +6,17 @@ python aggregate_runs.py -i /mnt/md0/network_sampling_data/stats -o /mnt/md0/net
 python aggregate_runs.py -i /home/geb97/network-sampling/sim_output/stats -o /mnt/md0/network_sampling_data/outfile.tsv
 
 python aggregate_runs.py -i /Users/g/Documents/network-sampling/stats -o /Users/g/Documents/network-sampling/dfs/output.tsv
+
+import pickle
+import pandas as pd
+all_records = []
+
+with open('/mnt/md0/network_sampling_data/stats/sc_graph.p', 'rb') as f:
+    records = pickle.load(f)
+    all_records.extend(records)
+
+df = pd.DataFrame(all_records)
+df.to_csv('/mnt/md0/network_sampling_data/dfs/sc_graph.tsv', sep='\t')
 """
 import click
 import glob
