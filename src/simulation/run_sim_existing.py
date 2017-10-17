@@ -185,6 +185,8 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
     else:
         g.node = deepcopy(node_attrs)
 
+    print('done making graph for {}'.format(samp_idx))
+
     method, fn = sampling_method
     while True: # enforce a few basic rules for the sample
         if 'sample_rds' in method:
