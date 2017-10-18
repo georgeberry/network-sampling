@@ -11,12 +11,12 @@ import pickle
 import pandas as pd
 all_records = []
 
-with open('/mnt/md0/network_sampling_data/stats/sc_graph.p', 'rb') as f:
+with open('/mnt/md0/network_sampling_data/stats/pokec_graph.p', 'rb') as f:
     records = pickle.load(f)
     all_records.extend(records)
 
 df = pd.DataFrame(all_records)
-df.to_csv('/mnt/md0/network_sampling_data/dfs/sc_graph.tsv', sep='\t')
+df.to_csv('/mnt/md0/network_sampling_data/dfs/pokec_graph.tsv', sep='\t')
 """
 import click
 import glob
