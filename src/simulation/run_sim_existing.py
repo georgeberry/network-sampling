@@ -61,8 +61,8 @@ SAMPLES_PER_GRAPH = 10 # int(sys.argv[2])
 # INPUT_FILE = '/mnt/md0/network_sampling_data/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
 # print(INPUT_FILE)
 
-OUTPUT_DIR = '/Users/g/Documents/network-sampling/stats/'
-# OUTPUT_DIR = '/mnt/md0/network_sampling_data/stats/'
+# OUTPUT_DIR = '/Users/g/Documents/network-sampling/stats/'
+OUTPUT_DIR = '/mnt/md0/network_sampling_data/stats/'
 OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 
 # Total number of lines given by:
