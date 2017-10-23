@@ -56,7 +56,7 @@ from sampling_procedures import get_correct_top20
 
 #### Params ####################################################################
 INPUT_FILE = sys.argv[1]
-SAMPLES_PER_GRAPH = int(sys.argv[2])
+SAMPLES_PER_GRAPH = 10 # int(sys.argv[2])
 
 # INPUT_FILE = '/mnt/md0/network_sampling_data/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
 # print(INPUT_FILE)
