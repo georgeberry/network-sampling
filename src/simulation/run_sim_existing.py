@@ -189,8 +189,6 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
     else:
         g.node = deepcopy(node_attrs)
 
-    print('done making graph for {}'.format(samp_idx))
-
     method, fn = sampling_method
     while True: # enforce a few basic rules for the sample
         if 'sample_rds' in method:
@@ -355,9 +353,7 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
 
         record_list.append(record)
 
-    print('Done with {}'.format(samp_idx))
-
-# print("Processed {}: {}.".format(INPUT_FILE,graph_idx))
+print("Processed {}: {}.".format(INPUT_FILE,graph_idx))
 
 with open(OUTPUT_FILE, 'wb') as f:
     pickle.dump(record_list, f)
