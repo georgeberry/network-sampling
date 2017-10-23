@@ -67,12 +67,6 @@ viz_df = read_tsv('/Users/g/Documents/network-sampling/sc_output.tsv') %>%
   ungroup() %>%
   mutate(category = factor(category))
 
-levels(viz_df$method) = c("Edge Sample",
-                          "Ideal Sampling",
-                          "Node Sample",
-                          "RDS",
-                          "Snowball Sample")
-
 levels(viz_df$category) = c("p=0.0",
                             "p=0.1\nno correction",
                             "p=0.2\nno correction",
@@ -81,34 +75,57 @@ levels(viz_df$category) = c("p=0.0",
                             "p=0.2",
                             "p=0.3")
 
-
 p7 = viz_df %>%
-  filter(method != "Ideal Sampling",
-         category %in% c("p=0.0",
+  filter(category %in% c("p=0.0",
                          "p=0.1",
                          "p=0.2",
                          "p=0.3"),
-         samp_size == 2000) %>%
-  select(category, method, m_b, p_b, t_b, s_b, h_b_hat, h_b, top_20_hat, top_20_true) %>%
-  mutate(err_p = m_b - p_b,
-         err_s = t_b - s_b,
-         err_h = h_b_hat - h_b,
-         err_v = top_20_hat - top_20_true) %>%
-  gather(key, err, err_p, err_s, err_h, err_v) %>%
+         samp_size==3000) %>%
+  select(category, p_misclassify, method, m_b, p_b, t_b, s_b, h_b_hat, h_b, top_20_hat, top_20_true) %>%
+  mutate(Node = (m_b - p_b)^2,
+         Edge = (t_b - s_b)^2,
+         Homophily = (h_b_hat - h_b)^2,
+         Visibility = (top_20_hat - top_20_true)^2) %>%
+  group_by(p_misclassify) %>%
+  summarize(node_nrmse = sqrt(mean(Node)) / mean(p_b),
+            edge_nrmse = sqrt(mean(Edge)) / mean(s_b),
+            homophily_nrmse = sqrt(mean(Homophily)) / mean(abs(h_b)),
+            visibility_nrmse = sqrt(mean(Visibility)) / mean(top_20_true)) %>%
+  select(p_misclassify,
+         node_nrmse,
+         edge_nrmse,
+         homophily_nrmse,
+         visibility_nrmse) %>%
+  gather(key,
+         val,
+         node_nrmse,
+         edge_nrmse,
+         homophily_nrmse,
+         visibility_nrmse) %>%
   mutate(key = factor(key,
-                      levels=c('err_p', 'err_s', 'err_h', 'err_v'),
-                      labels=c('Group proportion', 'Edge proportion', 'Homophily', 'Visibility'))) %>%
-  ggplot(aes(x=factor(category), y=err)) +
-  geom_boxplot(outlier.alpha = 0.2) +
+                      levels=c('node_nrmse',
+                               'visibility_nrmse',
+                               'edge_nrmse',
+                               'homophily_nrmse'),
+                      labels=c('Node',
+                               'Visibility',
+                               'Edge',
+                               'Homophily'))) %>%
+  filter(key != 'Edge') %>%
+  ggplot(aes(x=factor(p_misclassify), y=val)) +
+  scale_shape_identity() +
+  geom_point(aes(x=factor(p_misclassify), y=val, shape=5)) +
   geom_hline(yintercept=0, linetype='dashed') +
-  stat_summary(fun.y='mean', geom='point', color='black') +
   theme_bw() +
   theme(legend.position="none",
-        axis.title.y = element_text(size=14),
+        axis.title.y = element_text(size=10),
         axis.title.x = element_blank(),
-        strip.text.x = element_text(size = 12)) +
-  facet_grid(~ key) +
-  lims(y=c(-0.3, 0.3))+
-  labs(title='RDS performance on Rocha et al. network', y='Error')
+        strip.text.x = element_text(size = 10)) +
+  facet_grid(key ~ .) +
+  labs(title='Rocha et al. network', y='NRMSE') +
+  lims(y=c(-0.02, 0.35)) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
-ggsave('/Users/g/Documents/network-sampling/plots/p7.pdf', p7, width=11, height=3)
+show(p7)
+
+ggsave('/Users/g/Documents/network-sampling/plots/p7.pdf', p7, width=3, height=4)

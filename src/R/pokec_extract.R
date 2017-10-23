@@ -74,8 +74,14 @@ non_null_counts$user_id - non_null_counts$gender
 
 # choose column gender
 
-g_df = df %>%
+gender_df = df %>%
   select(user_id, gender) %>%
   filter(!is.na(gender))
   
-write_tsv(g_df, '/Users/g/Drive/project-RA/network-sampling/data/pokec/gender_df.tsv')
+write_tsv(gender_df, '/Users/g/Drive/project-RA/network-sampling/data/pokec/gender_df.tsv')
+
+age_df = df %>%
+  select(user_id, AGE) %>%
+  filter(AGE > 0, !is.na(AGE))
+
+write_tsv(age_df, '/Users/g/Drive/project-RA/network-sampling/data/pokec/age_df.tsv')

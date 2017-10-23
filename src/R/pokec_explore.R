@@ -49,9 +49,9 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
-#
+#### Age #########################################################################
 
-viz_df = read_tsv('/Users/g/Documents/network-sampling/pokec_graph.tsv') %>%
+viz_df = read_tsv('/Users/g/Documents/network-sampling/dfs/age_pokec_graph.tsv') %>%
   filter(!is.na(h_b_hat)) %>%
   mutate(clf_err_corrected = ifelse(clf_err_corrected == 'True', TRUE, FALSE),
          sampling_frac=samp_size/num_nodes,
@@ -67,37 +67,152 @@ viz_df = read_tsv('/Users/g/Documents/network-sampling/pokec_graph.tsv') %>%
   ungroup() %>%
   mutate(category = factor(category))
 
-levels(viz_df$method) = c("Edge Sample",
-                          "Ideal Sampling",
-                          "Node Sample",
-                          "RDS",
-                          "Snowball Sample")
-
 levels(viz_df$category) = c("p=0.0",
+                            "p=0.1\nno correction",
                             "p=0.2\nno correction",
-                            "p=0.2")
+                            "p=0.3\nno correction",
+                            "p=0.1",
+                            "p=0.2",
+                            "p=0.3")
+
 
 p8 = viz_df %>%
-  select(category, method, m_b, p_b, t_b, s_b, h_b_hat, h_b, top_20_hat, top_20_true) %>%
-  mutate(err_p = m_b - p_b,
-         err_s = t_b - s_b,
-         err_h = h_b_hat - h_b,
-         err_v = top_20_hat - top_20_true) %>%
-  gather(key, err, err_p, err_s, err_h, err_v) %>%
+  filter(category %in% c("p=0.0",
+                         "p=0.1",
+                         "p=0.2",
+                         "p=0.3"),
+         samp_size==25000) %>%
+  select(category, p_misclassify, method, m_b, p_b, t_b, s_b, h_b_hat, h_b, top_20_hat, top_20_true) %>%
+  mutate(Node = (m_b - p_b)^2,
+         Edge = (t_b - s_b)^2,
+         Homophily = (h_b_hat - h_b)^2,
+         Visibility = (top_20_hat - top_20_true)^2) %>%
+  group_by(p_misclassify) %>%
+  summarize(node_nrmse = sqrt(mean(Node)) / mean(p_b),
+            edge_nrmse = sqrt(mean(Edge)) / mean(s_b),
+            homophily_nrmse = sqrt(mean(Homophily)) / mean(abs(h_b)),
+            visibility_nrmse = sqrt(mean(Visibility)) / mean(top_20_true)) %>%
+  select(p_misclassify,
+         node_nrmse,
+         edge_nrmse,
+         homophily_nrmse,
+         visibility_nrmse) %>%
+  gather(key,
+         val,
+         node_nrmse,
+         edge_nrmse,
+         homophily_nrmse,
+         visibility_nrmse) %>%
   mutate(key = factor(key,
-                      levels=c('err_p', 'err_s', 'err_h', 'err_v'),
-                      labels=c('Group proportion', 'Edge proportion', 'Homophily', 'Visibility'))) %>%
-  ggplot(aes(x=factor(category), y=err)) +
-  geom_boxplot(outlier.alpha = 0.2) +
+                      levels=c('node_nrmse',
+                               'visibility_nrmse',
+                               'edge_nrmse',
+                               'homophily_nrmse'),
+                      labels=c('Node',
+                               'Visibility',
+                               'Edge',
+                               'Homophily'))) %>%
+  ggplot(aes(x=factor(p_misclassify), y=val)) +
+  scale_shape_identity() +
+  geom_point(aes(x=factor(p_misclassify), y=val, shape=5)) +
   geom_hline(yintercept=0, linetype='dashed') +
-  stat_summary(fun.y='mean', geom='point', color='black') +
   theme_bw() +
   theme(legend.position="none",
         axis.title.y = element_text(size=14),
         axis.title.x = element_blank(),
         strip.text.x = element_text(size = 12)) +
   facet_grid(~ key) +
-  lims(y=c(-0.3, 0.3))+
-  labs(title='RDS performance on Pokec graph', y='Error')
+  labs(title='RDS performance on age in Pokec graph', y='NRMSE') +
+  lims(y=c(-0.1, 0.4)) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+show(p8)
 
 ggsave('/Users/g/Documents/network-sampling/plots/p8.pdf', p8, width=11, height=3)
+
+
+
+#### Gender ######################################################################
+
+viz_df = read_tsv('/Users/g/Documents/network-sampling/dfs/gender_pokec_graph.tsv') %>%
+  filter(!is.na(h_b_hat)) %>%
+  mutate(clf_err_corrected = ifelse(clf_err_corrected == 'True', TRUE, FALSE),
+         sampling_frac=samp_size/num_nodes,
+         h_b_hat = h_b_hat,
+         #h_b_hat = winsor1(h_b_hat),
+         method = factor(method)) %>%
+  select(-X1) %>%
+  #filter(majority_size == 0.8,
+  #       ingrp_pref_a == 0.8,
+  #       ingrp_pref_b == 0.8) %>%
+  rowwise() %>%
+  mutate(category = paste0(clf_err_corrected, p_misclassify)) %>%
+  ungroup() %>%
+  mutate(category = factor(category))
+
+levels(viz_df$category) = c("p=0.0",
+                            "p=0.1\nno correction",
+                            "p=0.2\nno correction",
+                            "p=0.3\nno correction",
+                            "p=0.1",
+                            "p=0.2",
+                            "p=0.3")
+
+
+p9 = viz_df %>%
+  filter(category %in% c("p=0.0",
+                         "p=0.1",
+                         "p=0.2",
+                         "p=0.3"),
+         samp_size==25000) %>%
+  select(category, p_misclassify, method, m_b, p_b, t_b, s_b, h_b_hat, h_b, top_20_hat, top_20_true) %>%
+  mutate(Node = (m_b - p_b)^2,
+         Edge = (t_b - s_b)^2,
+         Homophily = (h_b_hat - h_b)^2,
+         Visibility = (top_20_hat - top_20_true)^2) %>%
+  group_by(p_misclassify) %>%
+  summarize(node_nrmse = sqrt(mean(Node)) / mean(p_b),
+            edge_nrmse = sqrt(mean(Edge)) / mean(s_b),
+            homophily_nrmse = sqrt(mean(Homophily)) / mean(abs(h_b)),
+            visibility_nrmse = sqrt(mean(Visibility)) / mean(top_20_true)) %>%
+  select(p_misclassify,
+         node_nrmse,
+         edge_nrmse,
+         homophily_nrmse,
+         visibility_nrmse) %>%
+  gather(key,
+         val,
+         node_nrmse,
+         edge_nrmse,
+         homophily_nrmse,
+         visibility_nrmse) %>%
+  mutate(key = factor(key,
+                      levels=c('node_nrmse',
+                               'visibility_nrmse',
+                               'edge_nrmse',
+                               'homophily_nrmse'),
+                      labels=c('Node',
+                               'Visibility',
+                               'Edge',
+                               'Homophily'))) %>%
+  filter(key != 'Homophily') %>%
+  ggplot(aes(x=factor(p_misclassify), y=val)) +
+  scale_shape_identity() +
+  geom_point(aes(x=factor(p_misclassify), y=val, shape=5)) +
+  geom_hline(yintercept=0, linetype='dashed') +
+  theme_bw() +
+  theme(legend.position="none",
+        axis.title.y = element_text(size=14),
+        axis.title.x = element_blank(),
+        strip.text.x = element_text(size = 12)) +
+  facet_grid(~ key) +
+  lims(y=c(-0.05, 0.2)) +
+  labs(title='RDS performance on gender in Pokec graph', y='NRMSE')+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+  
+show(p9)
+
+ggsave('/Users/g/Documents/network-sampling/plots/p9.pdf', p9, width=11, height=3)
+
+
+mp4 = multiplot(p8, p9, cols=1)
+

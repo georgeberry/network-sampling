@@ -22,7 +22,11 @@ Run with sexual contact network
     python run_sim_existing.py /mnt/md0/geb97/network-sampling/data/sexual_contact/sc_graph.p 100
 
 Run with pokec
-    python run_sim_existing.py /mnt/md0/geb97/network-sampling/data/pokec/pokec_graph.p 100
+    python run_sim_existing.py /mnt/md0/geb97/network-sampling/data/pokec/gender_pokec_graph.p 100
+
+    python run_sim_existing.py /Users/g/Drive/project-RA/network-sampling/data/pokec/age_pokec_graph.p 100
+
+/Users/g/Documents/network-sampling/data/pokec_graph.p
 
 Requires GNU parallel. This file operates on one graph file and outputs one
 output file. Then, aggregate_runs.py joins them together into one big df
@@ -57,14 +61,14 @@ SAMPLES_PER_GRAPH = int(sys.argv[2])
 # INPUT_FILE = '/mnt/md0/network_sampling_data/network-sampling/sim_output/graphs/10000_4_0.8_0.8_0.8_3.p'
 # print(INPUT_FILE)
 
-# OUTPUT_DIR = '/Users/g/Documents/network-sampling/'
-OUTPUT_DIR = '/mnt/md0/network_sampling_data/stats/'
+OUTPUT_DIR = '/Users/g/Documents/network-sampling/stats/'
+# OUTPUT_DIR = '/mnt/md0/network_sampling_data/stats/'
 OUTPUT_FILE = OUTPUT_DIR + os.path.split(INPUT_FILE)[1]
 
 # Total number of lines given by:
 # N_GRAPHS * SAMPLES_PER_GRAPH * len(SAMPLE_SIZE_INCREMENTS) * num sampling methods
-SAMPLE_SIZE = 10000 # 25% of simulation graphs
-INCREMENT_SIZE = 10000
+SAMPLE_SIZE = 3000
+INCREMENT_SIZE = 500
 SAMPLE_SIZE_INCREMENTS = np.arange(
     start=INCREMENT_SIZE,
     stop=SAMPLE_SIZE + INCREMENT_SIZE,
@@ -84,12 +88,12 @@ graph_idx = g.graph['params'].pop('idx')
 #### Run samples ###############################################################
 
 sampling_methods = {
-    # 'sample_edges':sample_edges,
-    # 'sample_nodes':sample_nodes,
+    'sample_edges':sample_edges,
+    'sample_nodes':sample_nodes,
     # 'sample_ego_networks':sample_ego_networks,
     'sample_rds': sample_rds,
     # 'sample_rds_double': sample_rds,
-    # 'sample_snowball': sample_snowball,
+    'sample_snowball': sample_snowball,
     # 'sample_ideal': (sample_nodes, sample_edges),
 }
 
@@ -195,7 +199,7 @@ for samp_idx, sample_size, sampling_method, p_misclassify in space:
                 m_b = rds_estimate(df, 'group')
                 m_a = 1 - m_b
                 mu = rds_estimate(df, 'degree')
-                df = boot_with_attr(df, mu, n=20000)
+                df = boot_with_attr(df, mu, n=100000)
             if method == 'sample_rds_double':
                 df, crosslink_dict = fn(
                     g,

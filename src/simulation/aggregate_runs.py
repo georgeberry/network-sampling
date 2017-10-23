@@ -7,16 +7,18 @@ python aggregate_runs.py -i /home/geb97/network-sampling/sim_output/stats -o /mn
 
 python aggregate_runs.py -i /Users/g/Documents/network-sampling/stats -o /Users/g/Documents/network-sampling/dfs/output.tsv
 
+python aggregate_runs.py -i /Users/g/Documents/network-sampling/stats/age_pokec_graph.p -o /Users/g/Documents/network-sampling/dfs/age_pokec_graph.tsv
+
 import pickle
 import pandas as pd
 all_records = []
 
-with open('/mnt/md0/network_sampling_data/stats/pokec_graph.p', 'rb') as f:
+with open('/Users/g/Documents/network-sampling/stats/age_pokec_graph.p', 'rb') as f:
     records = pickle.load(f)
     all_records.extend(records)
 
 df = pd.DataFrame(all_records)
-df.to_csv('/mnt/md0/network_sampling_data/dfs/pokec_graph.tsv', sep='\t')
+df.to_csv('/Users/g/Documents/network-sampling/dfs/age_pokec_graph.tsv', sep='\t')
 """
 import click
 import glob

@@ -30,11 +30,7 @@
 1. Snowball
 1. RDS
 
-## Types of plots to make
-1. Accuracy at sampling fraction for simulated graphs, 4 sampling methods, with and without correction for classifier error
-1. Bias for a fixed sampling size (1000 nodes)
-1. Compare RDS to ideal variance given by node or edge sampling for the given task
-1. Comparison with and without correction for classifier error
-1. Ratio between error & variance for no-clf-error with the corrected version
-1. f(err) for homophily as we increase misclassification probability
-1. do an actual two-sample where use a node and edge sample within to get an ideal lower bound of variance
+## Todos
+1. Write out variance
+1. Find a 3rd empirical network (g+? tw?)
+1. Find a harder characteristic in the pokec network

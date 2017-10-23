@@ -53,6 +53,7 @@ def get_correct_crosslink_proportions(
 
 
 def get_correct_top20(df, p_misclassify):
+    df = df.sort_values('degree', ascending=False)
     rows, cols = df.shape
     top_20_df = df.head(math.floor(rows/5))
     m_b = top_20_df.group.mean()
