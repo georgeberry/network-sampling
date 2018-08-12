@@ -1,36 +1,9 @@
-# network-sampling
+## Estimating group properties in online networks with a classifier
 
-## Some coding conventions
+This is the repo for (our paper)[https://arxiv.org/pdf/1807.09406.pdf] on combining network sampling and classification of group proportions.
 
-* Use python 3
-* Write lots of little functions
-* Use NetworkX for graph
-* Use numpy tools where available
-* Update this README regularly
+Please cite if you use this repo!
 
-## Analyses
-1. Visibility accuracy
-1. Majority group size accuracy
-1. Cross link proportion accuracy
-1. Homophily accuracy
+We are grateful for the research by (Karimi et al 2017)[https://github.com/frbkrm/HomophilicNtwMinorities], which we used for the graph generation procedure in simulations.
 
-## Paremeters
-1. Without classifier error
-1. With classifier error
-1. As the sample gets bigger
-
-## Networks
-1. Simulated parameter space
-1. Pokec
-1. Sexual
-
-## Sampling methods
-1. Edge
-1. Node
-1. Snowball
-1. RDS
-
-## Todos
-1. Write out variance
-1. Find a 3rd empirical network (g+? tw?)
-1. Find a harder characteristic in the pokec network
+You can check out the [SNAP datasets](https://snap.stanford.edu/data/soc-pokec.html) for the Pokec graph we use.
